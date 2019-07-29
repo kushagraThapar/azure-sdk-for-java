@@ -1,3 +1,6 @@
+parameters:
+  Artifacts: []
+
 stages:
   - stage: Build
     jobs:
@@ -121,10 +124,34 @@ stages:
               jdkVersionOption: '1.11'
               jdkArchitectureOption: 'x64'
               publishJUnitResults: false
-              goals: 'install site:site site:stage'
+              goals: 'install site:site   # The Prerelease and Release stages are conditioned on whether we are building a pull request and the branch.
+  - ${{if and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['System.TeamProject'], 'internal'))}}:
+    - template: pipelines/stages/archetype-java-release.yml@azure-sdk-build-tools
+      parameters:
+        DependsOn: Build
+        ArtifactName: packages
+        Artifacts:
+          - name: qpid-proton-j-extensions
+            safeName: qpidprotonjextensionsite:stage'
 
-          # We run a separate SpotBugs aggregate report step here to roll-up all the issues identified per-module in the
-          # previous step. This is only generated in non-PR builds (i.e. nightly runs, etc)
+          # We run a separate SpotBugs a  # The Prerelease and Release stages are conditioned on whether we are building a pull request and the branch.
+  - ${{if and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['System.TeamProject'], 'internal'))}}:
+    - template: pipelines/stages/archetype-java-release.yml@azure-sdk-build-tools
+      parameters:
+        DependsOn: Build
+        ArtifactName: packages
+        Artifacts:
+          - name: qpid-proton-j-extensions
+            safeName: qpidprotonjextensionsgregate report step here to roll-up all the issues identified per-module in the
+          # previous step. This is only   # The Prerelease and Release stages are conditioned on whether we are building a pull request and the branch.
+  - ${{if and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['System.TeamProject'], 'internal'))}}:
+    - template: pipelines/stages/archetype-java-release.yml@azure-sdk-build-tools
+      parameters:
+        DependsOn: Build
+        ArtifactName: packages
+        Artifacts:
+          - name: qpid-proton-j-extensions
+            safeName: qpidprotonjextensionsenerated in non-PR builds (i.e. nightly runs, etc)
           - task: Maven@3
             displayName: 'Run SpotBugs'
             condition: ne(variables['Build.Reason'], 'PullRequest')
@@ -148,13 +175,69 @@ stages:
             inputs:
               mavenPomFile: parent/pom.xml
               options: '$(DefaultOptions) -DskipTests -Dgpg.skip'
-              mavenOptions: '$(LoggingOptions)'
-              javaHomeOption: 'JDKVersion'
-              jdkVersionOption: '1.11'
-              jdkArchitectureOption: 'x64'
-              publishJUnitResults: false
-              goals: 'install'
-
+              mavenOptions: '$(LoggingOption  # The Prerelease and Release stages are conditioned on whether we are building a pull request and the branch.
+  - ${{if and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['System.TeamProject'], 'internal'))}}:
+    - template: pipelines/stages/archetype-java-release.yml@azure-sdk-build-tools
+      parameters:
+        DependsOn: Build
+        ArtifactName: packages
+        Artifacts:
+          - name: qpid-proton-j-extensions
+            safeName: qpidprotonjextensionss)'
+              javaHomeOption: 'JDKVersion'  # The Prerelease and Release stages are conditioned on whether we are building a pull request and the branch.
+  - ${{if and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['System.TeamProject'], 'internal'))}}:
+    - template: pipelines/stages/archetype-java-release.yml@azure-sdk-build-tools
+      parameters:
+        DependsOn: Build
+        ArtifactName: packages
+        Artifacts:
+          - name: qpid-proton-j-extensions
+            safeName: qpidprotonjextensions
+              jdkVersionOption: '1.11'  # The Prerelease and Release stages are conditioned on whether we are building a pull request and the branch.
+  - ${{if and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['System.TeamProject'], 'internal'))}}:
+    - template: pipelines/stages/archetype-java-release.yml@azure-sdk-build-tools
+      parameters:
+        DependsOn: Build
+        ArtifactName: packages
+        Artifacts:
+          - name: qpid-proton-j-extensions
+            safeName: qpidprotonjextensions
+              jdkArchitectureOption: 'x64'  # The Prerelease and Release stages are conditioned on whether we are building a pull request and the branch.
+  - ${{if and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['System.TeamProject'], 'internal'))}}:
+    - template: pipelines/stages/archetype-java-release.yml@azure-sdk-build-tools
+      parameters:
+        DependsOn: Build
+        ArtifactName: packages
+        Artifacts:
+          - name: qpid-proton-j-extensions
+            safeName: qpidprotonjextensions
+              publishJUnitResults: false  # The Prerelease and Release stages are conditioned on whether we are building a pull request and the branch.
+  - ${{if and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['System.TeamProject'], 'internal'))}}:
+    - template: pipelines/stages/archetype-java-release.yml@azure-sdk-build-tools
+      parameters:
+        DependsOn: Build
+        ArtifactName: packages
+        Artifacts:
+          - name: qpid-proton-j-extensions
+            safeName: qpidprotonjextensions
+              goals: 'install'  # The Prerelease and Release stages are conditioned on whether we are building a pull request and the branch.
+  - ${{if and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['System.TeamProject'], 'internal'))}}:
+    - template: pipelines/stages/archetype-java-release.yml@azure-sdk-build-tools
+      parameters:
+        DependsOn: Build
+        ArtifactName: packages
+        Artifacts:
+          - name: qpid-proton-j-extensions
+            safeName: qpidprotonjextensions
+  # The Prerelease and Release stages are conditioned on whether we are building a pull request and the branch.
+  - ${{if and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['System.TeamProject'], 'internal'))}}:
+    - template: pipelines/stages/archetype-java-release.yml@azure-sdk-build-tools
+      parameters:
+        DependsOn: Build
+        ArtifactName: packages
+        Artifacts:
+          - name: qpid-proton-j-extensions
+            safeName: qpidprotonjextensions
           - task: Maven@3
             displayName: 'Analyze dependencies'
             inputs:
@@ -266,3 +349,11 @@ stages:
             inputs:
               mergeTestResults: true
               testRunTitle: '$(OSName) on Java $(JavaVersion)'
+
+  # The Prerelease and Release stages are conditioned on whether we are building a pull request and the branch.
+  - ${{if and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['System.TeamProject'], 'internal'))}}:
+    - template: pipelines/stages/archetype-java-release.yml@azure-sdk-build-tools
+      parameters:
+        DependsOn: Build
+        ArtifactName: packages
+        Artifacts: ${{parameters.Artifacts}}
