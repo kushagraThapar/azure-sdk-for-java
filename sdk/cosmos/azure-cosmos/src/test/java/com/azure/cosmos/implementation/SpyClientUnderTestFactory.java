@@ -89,7 +89,7 @@ public class SpyClientUnderTestFactory {
             doAnswer(new Answer() {
                 @Override
                 public Object answer(InvocationOnMock invocationOnMock)  {
-                    RxDocumentServiceRequest req = invocationOnMock.getArgumentAt(0, RxDocumentServiceRequest.class);
+                    RxDocumentServiceRequest req = invocationOnMock.getArgument(0, RxDocumentServiceRequest.class);
                     requests.add(req);
                     return ClientWithGatewaySpy.this.origRxGatewayStoreModel.processMessage(req);
                 }
@@ -133,7 +133,7 @@ public class SpyClientUnderTestFactory {
 
         void initRequestCapture(HttpClient spyClient) {
             doAnswer(invocationOnMock -> {
-                HttpRequest httpRequest = invocationOnMock.getArgumentAt(0, HttpRequest.class);
+                HttpRequest httpRequest = invocationOnMock.getArgument(0, HttpRequest.class);
                 CompletableFuture<HttpHeaders> f = new CompletableFuture<>();
                 requestsResponsePairs.add(Pair.of(httpRequest, f));
 
@@ -191,7 +191,7 @@ public class SpyClientUnderTestFactory {
 
         void initRequestCapture(HttpClient spyClient) {
             doAnswer(invocationOnMock -> {
-                HttpRequest httpRequest = invocationOnMock.getArgumentAt(0, HttpRequest.class);
+                HttpRequest httpRequest = invocationOnMock.getArgument(0, HttpRequest.class);
                 CompletableFuture<HttpHeaders> f = new CompletableFuture<>();
                 requestsResponsePairs.add(Pair.of(httpRequest, f));
 

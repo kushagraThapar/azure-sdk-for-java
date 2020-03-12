@@ -22,6 +22,7 @@ import com.azure.cosmos.implementation.directconnectivity.StoreResponse;
 import com.azure.cosmos.models.PartitionKey;
 import com.azure.cosmos.rx.TestSuiteBase;
 import io.reactivex.subscribers.TestSubscriber;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
@@ -107,7 +108,7 @@ public class RetryContextOnDiagnosticTest extends TestSuiteBase {
         retryPolicy = new TestRetryPolicy();
         CosmosClientException exception = new CosmosClientException(410, exceptionText);
         Mono<CosmosClientException> exceptionMono = Mono.error(exception);
-        Mockito.when(parameterizedCallbackMethod.apply(Matchers.any(Quadruple.class))).thenReturn(exceptionMono);
+        Mockito.when(parameterizedCallbackMethod.apply(ArgumentMatchers.any(Quadruple.class))).thenReturn(exceptionMono);
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         executor.schedule(() -> {
             ((TestRetryPolicy) retryPolicy).noRetry = true;

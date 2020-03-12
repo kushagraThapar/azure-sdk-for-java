@@ -8,6 +8,7 @@ import com.azure.cosmos.implementation.PartitionKeyRange;
 import com.azure.cosmos.implementation.Utils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
@@ -152,8 +153,6 @@ public class RoutingMapProviderHelperTest {
                                                           new PartitionKeyRange("4", "0015", "0020"),
                                                           new PartitionKeyRange("5", "0020", "0040"),
                                                           new PartitionKeyRange("6", "0040", "FF"));
-        Mono<List<PartitionKeyRange>> listSingle = Mono.just(rangeList);
-
         Map<Range, List<PartitionKeyRange>> resultMap = new HashMap<>();
 
         resultMap.put(new Range<>("000D", "0012", true, false),
@@ -164,7 +163,7 @@ public class RoutingMapProviderHelperTest {
                       Collections.singletonList(new PartitionKeyRange("4", "0015", "00120")));
 
         Mockito.doAnswer(invocationOnMock -> {
-            Range range = invocationOnMock.getArgumentAt(1, Range.class);
+            Range range = invocationOnMock.getArgument(1);
             return Mono.just(new Utils.ValueHolder<>(resultMap.get(range)));
         }).when(routingMapProviderMock).tryGetOverlappingRangesAsync(Matchers.anyString(),
                                                                      Matchers.any(),
