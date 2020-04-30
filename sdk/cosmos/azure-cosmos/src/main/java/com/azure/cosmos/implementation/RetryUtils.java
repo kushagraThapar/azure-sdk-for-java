@@ -131,7 +131,7 @@ public class RetryUtils {
                     : Duration.ZERO;
             return recurrsiveFunc(callbackMethod, retryPolicy, inBackoffAlternateCallbackMethod, shouldRetryResult,
                     minBackoffForInBackoffCallback, rxDocumentServiceRequest)
-                    .delaySubscription(Flux.just(0L).delayElements(Duration.ofMillis(backoffTime.toMillis())));
+                    .delaySubscription(Mono.delay(Duration.ofMillis(backoffTime.toMillis())));
         };
     }
 

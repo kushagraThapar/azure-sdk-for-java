@@ -243,7 +243,7 @@ public class OrderbyDocumentQueryTest extends TestSuiteBase {
         CosmosPagedFlux<CosmosItemProperties> queryObservable = createdCollection.queryItems(query, options, CosmosItemProperties.class);
 
         TestSubscriber<FeedResponse<CosmosItemProperties>> subscriber = new TestSubscriber<>();
-        queryObservable.byPage(3).take(1).subscribe(subscriber);
+        queryObservable.byPage(3).limitRequest(1).subscribe(subscriber);
 
         subscriber.awaitTerminalEvent();
         subscriber.assertComplete();

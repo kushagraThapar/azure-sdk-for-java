@@ -151,12 +151,10 @@ class RxGatewayStoreModel implements RxStoreModel {
             // The RxDocumentServiceRequest::getContentAsByteBufFlux guaranteed to return
             // a valid flux (including Flux.empty) hence null check is not required here.
             Flux<ByteBuf> byteBufObservable = request.getContentAsByteBufFlux();
-
-            HttpRequest httpRequest = new HttpRequest(method,
-                    uri,
-                    uri.getPort(),
-                    httpHeaders,
-                    byteBufObservable);
+            HttpRequest httpRequest = new HttpRequest(method, uri, uri.getPort(), httpHeaders);
+            if (byteBufObservable != null) {
+                httpRequest.withBody(byteBufObservable);
+            }
 
             Mono<HttpResponse> httpResponseMono = this.httpClient.send(httpRequest);
 

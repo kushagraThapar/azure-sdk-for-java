@@ -592,7 +592,7 @@ public class ConflictWorker {
     private boolean validateManualConflict(AsyncDocumentClient client, Document conflictDocument) throws Exception {
         while (true) {
             FeedResponse<Conflict> response = client.readConflicts(this.manualCollectionUri, null)
-                    .take(1).single().block();
+                    .limitRequest(1).single().block();
 
             for (Conflict conflict : response.getResults()) {
                 if (!isDelete(conflict)) {
@@ -647,7 +647,7 @@ public class ConflictWorker {
     private void deleteConflict(Document conflictDocument) {
         AsyncDocumentClient delClient = clients.get(0);
 
-        FeedResponse<Conflict> conflicts = delClient.readConflicts(this.manualCollectionUri, null).take(1).single().block();
+        FeedResponse<Conflict> conflicts = delClient.readConflicts(this.manualCollectionUri, null).limitRequest(1).single().block();
 
         for (Conflict conflict : conflicts.getResults()) {
             if (!isDelete(conflict)) {
@@ -684,7 +684,7 @@ public class ConflictWorker {
 
     private void validateLWW(AsyncDocumentClient client, List<Document> conflictDocument, boolean hasDeleteConflict) throws Exception {
         FeedResponse<Conflict> response = client.readConflicts(this.lwwCollectionUri, null)
-                .take(1).single().block();
+                .limitRequest(1).single().block();
 
         if (response.getResults().size() != 0) {
             logger.error("Found {} conflicts in the lww collection", response.getResults().size());
@@ -774,7 +774,7 @@ public class ConflictWorker {
     }
 
     private void validateUDPAsync(AsyncDocumentClient client, List<Document> conflictDocument, boolean hasDeleteConflict) throws Exception {
-        FeedResponse<Conflict> response = client.readConflicts(this.udpCollectionUri, null).take(1).single().block();
+        FeedResponse<Conflict> response = client.readConflicts(this.udpCollectionUri, null).limitRequest(1).single().block();
 
         if (response.getResults().size() != 0) {
             logger.error("Found {} conflicts in the udp collection", response.getResults().size());

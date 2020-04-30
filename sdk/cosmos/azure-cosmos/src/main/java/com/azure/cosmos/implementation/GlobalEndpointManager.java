@@ -101,7 +101,7 @@ public class GlobalEndpointManager implements AutoCloseable {
                             .map(index -> getDatabaseAccountFn.apply(LocationHelper.getLocationEndpoint(defaultEndpoint, locations.get(index))).flux());
 
                     // iterate and get the database account from the first non failure, otherwise get the last error.
-                    Mono<DatabaseAccount> res = Flux.concatDelayError(obs).take(1).single();
+                    Mono<DatabaseAccount> res = Flux.concatDelayError(obs).limitRequest(1).single();
                     return res.doOnError(
                             innerE -> logger.error("Fail to reach location any of locations {} {}", String.join(",", locations), innerE.getMessage()));
                 });

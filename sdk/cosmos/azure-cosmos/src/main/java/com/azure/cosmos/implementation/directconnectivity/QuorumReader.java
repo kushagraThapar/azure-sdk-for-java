@@ -242,7 +242,7 @@ public class QuorumReader {
                                RMResources.ReadQuorumNotMet,
                                readQuorumValue)));
                    }))
-                   .take(1)
+                   .limitRequest(1)
                    .single();
     }
 
@@ -487,7 +487,7 @@ public class QuorumReader {
                         logger.warn(
                             "Store LSN {} or quorum acked LSN {} are lower than expected LSN {}", storeResult.lsn, storeResult.quorumAckedLSN, lsnToWaitFor);
 
-                            return Flux.just(0L).delayElements(Duration.ofMillis(delayBetweenReadBarrierCallsInMs)).flatMap(dummy -> Flux.empty());
+                            return Mono.delay(Duration.ofMillis(delayBetweenReadBarrierCallsInMs)).flatMap(dummy -> Mono.empty());
                     }
 
                         return Flux.just(PrimaryReadOutcome.QuorumMet);
@@ -495,7 +495,7 @@ public class QuorumReader {
             );
         }).repeat(maxNumberOfPrimaryReadRetries)  // Loop for store and quorum LSN to match
                    .defaultIfEmpty(PrimaryReadOutcome.QuorumNotMet)
-                   .take(1)
+                   .limitRequest(1)
                    .single();
 
     }
@@ -556,8 +556,8 @@ public class QuorumReader {
                     }
                 }
             );
-        }).repeatWhen(obs -> obs.flatMap(aVoid -> Flux.just(0L).delayElements(Duration.ofMillis(delayBetweenReadBarrierCallsInMs))))
-                .take(1) // Retry loop
+        }).repeatWhen(obs -> obs.flatMap(aVoid -> Mono.delay(Duration.ofMillis(delayBetweenReadBarrierCallsInMs))))
+                .limitRequest(1) // Retry loop
                    .flatMap(barrierRequestSucceeded ->
                         Flux.defer(() -> {
 
@@ -606,14 +606,14 @@ public class QuorumReader {
                                }).repeatWhen(obs -> obs.flatMap(aVoid -> {
 
                                        if ((maxBarrierRetriesForMultiRegion - readBarrierRetryCountMultiRegion.get()) > maxShortBarrierRetriesForMultiRegion) {
-                                                      return Flux.just(0L).delayElements(Duration.ofMillis(barrierRetryIntervalInMsForMultiRegion));
+                                                      return Mono.delay(Duration.ofMillis(barrierRetryIntervalInMsForMultiRegion));
                                        } else {
-                                                      return Flux.just(0L).delayElements(Duration.ofMillis(shortBarrierRetryIntervalInMsForMultiRegion));
+                                                      return Mono.delay(Duration.ofMillis(shortBarrierRetryIntervalInMsForMultiRegion));
                                        }
 
                                    })
                                    // stop predicate, simulating while loop
-                                ).take(1);
+                                ).limitRequest(1);
                            }
 
                             return Flux.empty();
@@ -623,7 +623,7 @@ public class QuorumReader {
                                logger.debug("QuorumReader: waitForReadBarrierAsync - TargetGlobalCommittedLsn: {}, MaxGlobalCommittedLsn: {}.", targetGlobalCommittedLSN, maxGlobalCommittedLsn);
                                     return Flux.just(false);
                            })
-                       ).take(1).single();
+                       ).limitRequest(1).single();
     }
 
     private boolean isQuorumMet(

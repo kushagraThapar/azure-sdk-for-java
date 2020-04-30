@@ -88,7 +88,7 @@ public class Worker {
                     FeedOptions options = new FeedOptions();
                     ModelBridgeInternal.setFeedOptionsContinuationToken(options, response != null ? response.getContinuationToken() : null);
 
-                    response = this.client.readDocuments(this.documentCollectionUri, options).take(1)
+                    response = this.client.readDocuments(this.documentCollectionUri, options).limitRequest(1)
                             .subscribeOn(schedulerForBlockingWork).single().block();
 
                     totalItemRead += response.getResults().size();
@@ -125,7 +125,7 @@ public class Worker {
             FeedOptions options = new FeedOptions();
             ModelBridgeInternal.setFeedOptionsContinuationToken(options, response != null ? response.getContinuationToken() : null);
 
-            response = this.client.readDocuments(this.documentCollectionUri, options).take(1)
+            response = this.client.readDocuments(this.documentCollectionUri, options).limitRequest(1)
                     .subscribeOn(schedulerForBlockingWork).single().block();
 
             documents.addAll(response.getResults());

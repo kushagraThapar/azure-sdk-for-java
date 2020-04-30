@@ -113,6 +113,10 @@ class ReactorNettyClient implements HttpClient {
                     request.getReactorNettyRequestRecord().setTimeSent(time);
                 } else if(state.equals(HttpClientState.RESPONSE_RECEIVED)){
                     request.getReactorNettyRequestRecord().setTimeReceived(time);
+                } else if (state.equals(HttpClientState.RELEASED)) {
+//                    logger.info("Channel : {} RELEASED : {} HTTP METHOD", connection.channel(), request.httpMethod());
+                } else if (state.equals(HttpClientState.DISCONNECTING)) {
+                    logger.info("Channel : {} DISCONNECTING : {} HTTP METHOD", connection.channel(), request.httpMethod());
                 }
             })
             .keepAlive(this.httpClientConfig.isConnectionKeepAlive())

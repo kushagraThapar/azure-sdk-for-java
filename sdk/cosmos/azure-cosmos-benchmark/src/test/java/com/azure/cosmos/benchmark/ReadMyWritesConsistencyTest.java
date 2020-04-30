@@ -24,6 +24,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
@@ -189,28 +190,32 @@ public class ReadMyWritesConsistencyTest {
 
     private void scheduleScaleUp(int delayStartInSeconds, int newThroughput) {
         AsyncDocumentClient housekeepingClient = Utils.housekeepingClient();
-        Flux.just(0L).delayElements(Duration.ofSeconds(delayStartInSeconds), Schedulers.newSingle("ScaleUpThread")).flatMap(aVoid -> {
+        Mono.delay(Duration.ofSeconds(delayStartInSeconds), Schedulers.newSingle("ScaleUpThread"))
+            .flatMap(aVoid -> {
 
-            // increase throughput to max for a single partition collection to avoid throttling
-            // for bulk insert and later queries.
-            return housekeepingClient.queryOffers(
-                String.format("SELECT * FROM r WHERE r.offerResourceId = '%s'",
-                    collection.getResourceId())
-                , null).flatMap(page -> Flux.fromIterable(page.getResults()))
-                                     .take(1).flatMap(offer -> {
-                    logger.info("going to scale up collection, newThroughput {}", newThroughput);
-                    offer.setThroughput(newThroughput);
-                    return housekeepingClient.replaceOffer(offer);
-                });
-        }).doOnTerminate(housekeepingClient::close)
+                // increase throughput to max for a single partition collection to avoid throttling
+                // for bulk insert and later queries.
+                logger.info("Received flat map {}", aVoid);
+                return housekeepingClient.queryOffers(String.format("SELECT * FROM r WHERE r.offerResourceId = '%s'", collection.getResourceId()), null)
+                                         .limitRequest(1)
+                                         .flatMap(page -> {
+                                             logger.info("Received page");
+                                             return Flux.fromIterable(page.getResults());
+                                         })
+                                         .flatMap(offer -> {
+                                            logger.info("going to scale up collection, newThroughput {}", newThroughput);
+                                            offer.setThroughput(newThroughput);
+                                            return housekeepingClient.replaceOffer(offer);
+                                         }).single();
+            }).doOnTerminate(housekeepingClient::close)
             .subscribe(aVoid -> {
+                    logger.info("Subscribed to replace offer - {}", aVoid.getActivityId());
                 }, e -> {
                     logger.error("collectionScaleUpFailed to scale up collection", e);
                     collectionScaleUpFailed.set(true);
                 },
                 () -> {
                     logger.info("Collection Scale up request sent to the service");
-
                 }
             );
     }

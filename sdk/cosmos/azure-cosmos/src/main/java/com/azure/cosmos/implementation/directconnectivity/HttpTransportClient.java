@@ -68,7 +68,6 @@ public class HttpTransportClient extends TransportClient {
     private final Configs configs;
 
     HttpClient createHttpClient(Duration requestTimeout) {
-        // TODO: use one instance of SSL context everywhere
         HttpClientConfig httpClientConfig = new HttpClientConfig(this.configs);
         httpClientConfig.withRequestTimeout(requestTimeout);
         httpClientConfig.withPoolSize(configs.getDirectHttpsMaxConnectionLimit());
