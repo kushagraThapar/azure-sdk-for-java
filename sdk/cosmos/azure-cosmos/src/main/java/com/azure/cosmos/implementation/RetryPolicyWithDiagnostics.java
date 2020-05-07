@@ -8,10 +8,11 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class RetryPolicyWithDiagnostics implements IRetryPolicy{
 
-     private volatile int retriesCountForDiagnostics;
+     private final AtomicInteger retriesCountForDiagnostics = new AtomicInteger();
      private volatile ZonedDateTime retryStartTime;
      private volatile ZonedDateTime retryEndTime;
      private volatile List<int[]> statusAndSubStatusCodes;
@@ -46,12 +47,12 @@ public abstract class RetryPolicyWithDiagnostics implements IRetryPolicy{
 
     @Override
     public int getRetryCount() {
-        return this.retriesCountForDiagnostics;
+        return this.retriesCountForDiagnostics.get();
     }
 
     @Override
     public void incrementRetry(){
-        this.retriesCountForDiagnostics++;
+        this.retriesCountForDiagnostics.incrementAndGet();
     }
 
     @Override

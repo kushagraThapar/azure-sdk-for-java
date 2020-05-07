@@ -20,7 +20,7 @@ public final class ConnectionPolicy {
 
     private static final int DEFAULT_MAX_POOL_SIZE = 1000;
 
-    private static ConnectionPolicy defaultPolicy = null;
+    private static ConnectionPolicy defaultPolicy = new ConnectionPolicy();
     private Duration requestTimeout;
     private final Duration mediaRequestTimeout;
     private ConnectionMode connectionMode;
@@ -54,9 +54,6 @@ public final class ConnectionPolicy {
      * @return the default connection policy.
      */
     public static ConnectionPolicy getDefaultPolicy() {
-        if (ConnectionPolicy.defaultPolicy == null) {
-            ConnectionPolicy.defaultPolicy = new ConnectionPolicy();
-        }
         return ConnectionPolicy.defaultPolicy;
     }
 

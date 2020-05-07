@@ -84,7 +84,7 @@ public class AsyncCache<TKey, TValue> {
                 logger.debug("cache[{}] resulted in error, computing new value", key, err);
                 AsyncLazy<TValue> asyncLazy = new AsyncLazy<>(singleValueInitFunc);
                 AsyncLazy<TValue> resultAsyncLazy = values.merge(key, asyncLazy,
-                        (lazyValue1, lazyValu2) -> lazyValue1 == initialLazyValue ? lazyValu2 : lazyValue1);
+                        (lazyValue1, lazyValue2) -> lazyValue1 == initialLazyValue ? lazyValue2 : lazyValue1);
                 return resultAsyncLazy.single().flux();
 
             }, Flux::empty).single();
@@ -93,7 +93,7 @@ public class AsyncCache<TKey, TValue> {
         logger.debug("cache[{}] doesn't exist, computing new value", key);
         AsyncLazy<TValue> asyncLazy = new AsyncLazy<>(singleValueInitFunc);
         AsyncLazy<TValue> resultAsyncLazy = values.merge(key, asyncLazy,
-                (lazyValue1, lazyValu2) -> lazyValue1 == initialLazyValue ? lazyValu2 : lazyValue1);
+            (lazyValue1, lazyValue2) -> lazyValue1);
         return resultAsyncLazy.single();
     }
 

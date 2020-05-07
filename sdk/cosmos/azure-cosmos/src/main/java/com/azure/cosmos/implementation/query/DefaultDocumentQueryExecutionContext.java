@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -52,7 +53,7 @@ import static com.azure.cosmos.models.ModelBridgeInternal.partitionKeyRangeIdInt
 public class DefaultDocumentQueryExecutionContext<T extends Resource> extends DocumentQueryExecutionContextBase<T> {
 
     private boolean isContinuationExpected;
-    private volatile int retries = -1;
+    private final AtomicInteger retries = new AtomicInteger(-1);
 
     private final SchedulingStopwatch fetchSchedulingMetrics;
     private final FetchExecutionRangeAccumulator fetchExecutionRangeAccumulator;
@@ -151,21 +152,21 @@ public class DefaultDocumentQueryExecutionContext<T extends Resource> extends Do
             this.fetchExecutionRangeAccumulator.beginFetchRange();
             this.fetchSchedulingMetrics.start();
             return BackoffRetryUtility.executeRetry(() -> {
-                ++this.retries;
+                this.retries.incrementAndGet();
                 return executeRequestAsync(req);
             }, finalRetryPolicyInstance)
                     .map(tFeedResponse -> {
                         this.fetchSchedulingMetrics.stop();
                         this.fetchExecutionRangeAccumulator.endFetchRange(tFeedResponse.getActivityId(),
                                 tFeedResponse.getResults().size(),
-                                this.retries);
+                                this.retries.get());
                         ImmutablePair<String, SchedulingTimeSpan> schedulingTimeSpanMap =
                                 new ImmutablePair<>(DEFAULT_PARTITION_KEY_RANGE_ID, this.fetchSchedulingMetrics.getElapsedTime());
                         if (!StringUtils.isEmpty(tFeedResponse.getResponseHeaders().get(HttpConstants.HttpHeaders.QUERY_METRICS))) {
                             QueryMetrics qm =
                                     BridgeInternal.createQueryMetricsFromDelimitedStringAndClientSideMetrics(tFeedResponse.getResponseHeaders()
                                                     .get(HttpConstants.HttpHeaders.QUERY_METRICS),
-                                            new ClientSideMetrics(this.retries,
+                                            new ClientSideMetrics(this.retries.get(),
                                                     tFeedResponse.getRequestCharge(),
                                                     this.fetchExecutionRangeAccumulator.getExecutionRanges(),
                                                     Arrays.asList(schedulingTimeSpanMap)),

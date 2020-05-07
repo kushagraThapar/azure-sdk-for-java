@@ -291,8 +291,6 @@ public class RxDocumentClientImpl implements AsyncDocumentClient, IAuthorization
         this.storeClientFactory = new StoreClientFactory(
             this.configs,
             this.connectionPolicy.getRequestTimeout(),
-           // this.maxConcurrentConnectionOpenRequests,
-            0,
             this.userAgentContainer,
             this.connectionSharingAcrossClientsEnabled
         );

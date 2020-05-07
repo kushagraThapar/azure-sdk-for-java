@@ -89,12 +89,11 @@ public class AggregateDocumentQueryExecutionContext<T extends Resource> implemen
                         QueryItem values = new QueryItem(doc.toJson());
                         this.aggregator.aggregate(values.getItem());
                         for(String key : BridgeInternal.queryMetricsFromFeedResponse(page).keySet()) {
+                            QueryMetrics queryMetrics = BridgeInternal.queryMetricsFromFeedResponse(page).get(key);
                             if (queryMetricsMap.containsKey(key)) {
-                                QueryMetrics qm = BridgeInternal.queryMetricsFromFeedResponse(page).get(key);
-                                queryMetricsMap.get(key).add(qm);
-                            } else {
-                                queryMetricsMap.put(key, BridgeInternal.queryMetricsFromFeedResponse(page).get(key));
+                                queryMetrics = queryMetricsMap.get(key).add(queryMetrics);
                             }
+                            queryMetricsMap.put(key, queryMetrics);
                         }
                     }
 

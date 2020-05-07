@@ -25,13 +25,11 @@ public class PipelinedDocumentQueryExecutionContext<T extends Resource> implemen
 
     private IDocumentQueryExecutionComponent<T> component;
     private int actualPageSize;
-    private UUID correlatedActivityId;
 
     private PipelinedDocumentQueryExecutionContext(IDocumentQueryExecutionComponent<T> component, int actualPageSize,
             UUID correlatedActivityId) {
         this.component = component;
         this.actualPageSize = actualPageSize;
-        this.correlatedActivityId = correlatedActivityId;
 
         // this.executeNextSchedulingMetrics = new SchedulingStopwatch();
         // this.executeNextSchedulingMetrics.Ready();

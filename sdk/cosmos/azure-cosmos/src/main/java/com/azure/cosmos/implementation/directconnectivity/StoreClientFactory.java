@@ -23,25 +23,18 @@ import java.time.Duration;
 public class StoreClientFactory implements AutoCloseable {
 
     private final Configs configs;
-    private final int maxConcurrentConnectionOpenRequests;
-    private final Duration requestTimeout;
     private final Protocol protocol;
     private final TransportClient transportClient;
-    private final boolean enableTransportClientSharing;
     private volatile boolean isClosed;
 
     public StoreClientFactory(
         Configs configs,
         Duration requestTimeout,
-        int maxConcurrentConnectionOpenRequests,
         UserAgentContainer userAgent,
         boolean enableTransportClientSharing) {
 
         this.configs = configs;
         this.protocol = configs.getProtocol();
-        this.requestTimeout = requestTimeout;
-        this.maxConcurrentConnectionOpenRequests = maxConcurrentConnectionOpenRequests;
-        this.enableTransportClientSharing = enableTransportClientSharing;
 
         if (enableTransportClientSharing) {
             this.transportClient = SharedTransportClient.getOrCreateInstance(protocol, configs, requestTimeout, userAgent);

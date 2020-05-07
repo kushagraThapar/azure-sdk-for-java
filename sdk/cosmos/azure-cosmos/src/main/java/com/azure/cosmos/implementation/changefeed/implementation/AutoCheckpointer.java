@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 package com.azure.cosmos.implementation.changefeed.implementation;
 
-import com.azure.cosmos.implementation.CosmosItemProperties;
 import com.azure.cosmos.implementation.changefeed.ChangeFeedObserver;
 import com.azure.cosmos.implementation.changefeed.ChangeFeedObserverCloseReason;
 import com.azure.cosmos.implementation.changefeed.ChangeFeedObserverContext;
@@ -16,6 +15,7 @@ import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Auto check-pointer implementation for {@link ChangeFeedObserver}.
@@ -24,7 +24,7 @@ class AutoCheckpointer implements ChangeFeedObserver {
     private final Logger logger = LoggerFactory.getLogger(AutoCheckpointer.class);
     private final CheckpointFrequency checkpointFrequency;
     private final ChangeFeedObserver observer;
-    private volatile int processedDocCount;
+    private final AtomicInteger processedDocCount = new AtomicInteger();
     private volatile ZonedDateTime lastCheckpointTime;
 
     public AutoCheckpointer(CheckpointFrequency checkpointFrequency, ChangeFeedObserver observer) {
@@ -61,7 +61,7 @@ class AutoCheckpointer implements ChangeFeedObserver {
     }
 
     private Mono<Void> afterProcessChanges(ChangeFeedObserverContext context) {
-        this.processedDocCount ++;
+        this.processedDocCount.incrementAndGet();
 
         if (this.isCheckpointNeeded()) {
             return context.checkpoint()
@@ -69,7 +69,7 @@ class AutoCheckpointer implements ChangeFeedObserver {
                     logger.warn("Checkpoint failed; this worker will be killed", throwable);
                 })
                 .doOnSuccess((Void) -> {
-                    this.processedDocCount = 0;
+                    this.processedDocCount.set(0);
                     this.lastCheckpointTime = ZonedDateTime.now(ZoneId.of("UTC"));
                 })
                 .then();
@@ -82,7 +82,7 @@ class AutoCheckpointer implements ChangeFeedObserver {
             return true;
         }
 
-        if (this.processedDocCount >= this.checkpointFrequency.getProcessedDocumentCount()) {
+        if (this.processedDocCount.get() >= this.checkpointFrequency.getProcessedDocumentCount()) {
             return true;
         }
 

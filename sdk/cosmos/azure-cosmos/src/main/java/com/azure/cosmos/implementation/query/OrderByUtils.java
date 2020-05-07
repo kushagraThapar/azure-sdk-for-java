@@ -71,12 +71,11 @@ class OrderByUtils {
         public Flux<OrderByRowResult<T>> apply(Flux<DocumentProducer<T>.DocumentProducerFeedResponse> source) {
             return source.flatMap(documentProducerFeedResponse -> {
                 for (String key : BridgeInternal.queryMetricsFromFeedResponse(documentProducerFeedResponse.pageResult).keySet()) {
+                    QueryMetrics queryMetrics = BridgeInternal.queryMetricsFromFeedResponse(documentProducerFeedResponse.pageResult).get(key);
                     if (queryMetricsMap.containsKey(key)) {
-                        QueryMetrics qm = BridgeInternal.queryMetricsFromFeedResponse(documentProducerFeedResponse.pageResult).get(key);
-                        queryMetricsMap.get(key).add(qm);
-                    } else {
-                        queryMetricsMap.put(key, BridgeInternal.queryMetricsFromFeedResponse(documentProducerFeedResponse.pageResult).get(key));
+                        queryMetrics = queryMetricsMap.get(key).add(queryMetrics);
                     }
+                    queryMetricsMap.put(key, queryMetrics);
                 }
                 List<T> results = documentProducerFeedResponse.pageResult.getResults();
                 OrderByContinuationToken orderByContinuationToken = targetRangeToOrderByContinuationTokenMap.get(documentProducerFeedResponse.sourcePartitionKeyRange.getId());
