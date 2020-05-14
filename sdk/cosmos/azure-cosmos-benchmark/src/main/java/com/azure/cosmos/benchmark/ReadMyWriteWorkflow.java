@@ -230,7 +230,7 @@ class ReadMyWriteWorkflow extends AsyncBenchmark<Document> {
         }
 
         int top = RandomUtils.nextInt(0, MAX_TOP_QUERY_COUNT);
-        boolean useOrderBy = RandomUtils.nextBoolean();
+        boolean useOrderBy = false; //  RandomUtils.nextBoolean();
 
         return generateQuery(documentList, top > 1000 ? top : null, useOrderBy);
     }

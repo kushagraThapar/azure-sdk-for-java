@@ -4,6 +4,7 @@ package com.azure.cosmos.implementation.http;
 
 import com.azure.cosmos.implementation.Configs;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.logging.LogLevel;
@@ -14,7 +15,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.netty.ByteBufFlux;
 import reactor.netty.Connection;
+import reactor.netty.FutureMono;
 import reactor.netty.NettyOutbound;
+import reactor.netty.ReactorNetty;
 import reactor.netty.http.client.HttpClientRequest;
 import reactor.netty.http.client.HttpClientResponse;
 import reactor.netty.http.client.HttpClientState;
@@ -111,12 +114,8 @@ class ReactorNettyClient implements HttpClient {
                     request.getReactorNettyRequestRecord().setTimeConfigured(time);
                 } else if(state.equals(HttpClientState.REQUEST_SENT)){
                     request.getReactorNettyRequestRecord().setTimeSent(time);
-                } else if(state.equals(HttpClientState.RESPONSE_RECEIVED)){
+                } else if(state.equals(HttpClientState.RESPONSE_RECEIVED)) {
                     request.getReactorNettyRequestRecord().setTimeReceived(time);
-                } else if (state.equals(HttpClientState.RELEASED)) {
-//                    logger.info("Channel : {} RELEASED : {} HTTP METHOD", connection.channel(), request.httpMethod());
-                } else if (state.equals(HttpClientState.DISCONNECTING)) {
-                    logger.info("Channel : {} DISCONNECTING : {} HTTP METHOD", connection.channel(), request.httpMethod());
                 }
             })
             .keepAlive(this.httpClientConfig.isConnectionKeepAlive())
@@ -140,9 +139,12 @@ class ReactorNettyClient implements HttpClient {
                 reactorNettyRequest.header(header.name(), header.value());
             }
             if (restRequest.body() != null) {
-                return reactorNettyOutbound.send(restRequest.body());
+                return reactorNettyOutbound.send(restRequest.body())
+                                           .then(Mono.empty(), () -> {
+                                               logger.info("Running clean up code");
+                                               });
             } else {
-                return reactorNettyOutbound;
+                return reactorNettyOutbound.send(Flux.just(Unpooled.EMPTY_BUFFER));
             }
         };
     }

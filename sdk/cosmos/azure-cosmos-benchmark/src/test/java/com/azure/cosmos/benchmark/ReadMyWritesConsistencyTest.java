@@ -27,6 +27,7 @@ import org.testng.annotations.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.tools.agent.ReactorDebugAgent;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -98,7 +99,6 @@ public class ReadMyWritesConsistencyTest {
 
     @Test(dataProvider = "collectionLinkTypeArgProvider", groups = "e2e")
     public void readMyWrites(boolean useNameLink) throws Exception {
-
         int concurrency = 5;
 
         String cmdFormat = "-serviceEndpoint %s -masterKey %s" +
@@ -109,7 +109,7 @@ public class ReadMyWritesConsistencyTest {
             " -numberOfOperations %s" +
             " -maxRunningTimeDuration %s" +
             " -operation ReadMyWrites" +
-            " -connectionMode Direct" +
+            " -connectionMode Gateway" +
             " -numberOfPreCreatedDocuments 100" +
             " -printingInterval 60" +
             "%s";
