@@ -10,10 +10,14 @@ import com.azure.cosmos.implementation.RxDocumentServiceRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.SynchronousSink;
 import reactor.util.concurrent.Queues;
 
+import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -57,9 +61,15 @@ public class Paginator {
             int top, int maxPageSize, boolean isChangeFeed) {
 
         return Flux.defer(() -> {
-            Flux<Flux<FeedResponse<T>>> generate = Flux.generate(() ->
-                    new Fetcher<>(createRequestFunc, executeFunc, continuationToken, isChangeFeed, top, maxPageSize),
-                    (tFetcher, sink) -> {
+            Flux<Flux<FeedResponse<T>>> generate = Flux.generate(new Callable<Fetcher<T>>() {
+                                                                     @Override
+                                                                     public Fetcher<T> call() throws Exception {
+                                                                         return new Fetcher<>(createRequestFunc, executeFunc, continuationToken, isChangeFeed, top, maxPageSize);
+                                                                     }
+                                                                 },
+                new BiFunction<Fetcher<T>, SynchronousSink<Flux<FeedResponse<T>>>, Fetcher<T>>() {
+                    @Override
+                    public Fetcher<T> apply(Fetcher<T> tFetcher, SynchronousSink<Flux<FeedResponse<T>>> sink) {
                         if (tFetcher.shouldFetchMore()) {
                             Mono<FeedResponse<T>> nextPage = tFetcher.nextPage();
                             sink.next(nextPage.flux());
@@ -68,7 +78,8 @@ public class Paginator {
                             sink.complete();
                         }
                         return tFetcher;
-            });
+                    }
+                });
 
             return generate.flatMapSequential(feedResponseFlux -> feedResponseFlux, 1);
         });

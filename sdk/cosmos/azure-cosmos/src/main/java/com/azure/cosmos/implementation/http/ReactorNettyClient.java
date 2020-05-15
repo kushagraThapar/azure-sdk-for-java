@@ -144,7 +144,7 @@ class ReactorNettyClient implements HttpClient {
                                                logger.info("Running clean up code");
                                                });
             } else {
-                return reactorNettyOutbound.send(Flux.just(Unpooled.EMPTY_BUFFER));
+                return reactorNettyOutbound;
             }
         };
     }

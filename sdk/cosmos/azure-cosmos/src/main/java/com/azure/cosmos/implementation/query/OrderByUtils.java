@@ -32,11 +32,10 @@ class OrderByUtils {
                                                                               Map<String, OrderByContinuationToken> targetRangeToOrderByContinuationTokenMap) {
         @SuppressWarnings("unchecked")
         Flux<OrderByRowResult<T>>[] fluxes = documentProducers
-                .subList(0, documentProducers.size())
-                .stream()
-                .map(producer ->
-                        toOrderByQueryResultObservable(klass, producer, tracker, queryMetricsMap, targetRangeToOrderByContinuationTokenMap, consumeComparer.getSortOrders()))
-                .toArray(Flux[]::new);
+            .stream()
+            .map(producer ->
+                toOrderByQueryResultObservable(klass, producer, tracker, queryMetricsMap, targetRangeToOrderByContinuationTokenMap, consumeComparer.getSortOrders()))
+            .toArray(Flux[]::new);
         return Flux.mergeOrdered(consumeComparer, fluxes);
     }
 
