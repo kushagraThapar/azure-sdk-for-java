@@ -4,6 +4,8 @@
 package com.azure.resourcemanager.authorization;
 
 import java.time.Duration;
+
+import com.azure.resourcemanager.authorization.models.ActiveDirectoryApplication;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +17,7 @@ public class ApplicationsTests extends GraphRbacManagementTest {
         ActiveDirectoryApplication application = null;
         try {
             application =
-                graphRbacManager
+                authorizationManager
                     .applications()
                     .define(name)
                     .withSignOnUrl("http://easycreate.azure.com/" + name)
@@ -44,7 +46,7 @@ public class ApplicationsTests extends GraphRbacManagementTest {
             Assertions.assertEquals(0, application.passwordCredentials().size());
         } finally {
             if (application != null) {
-                graphRbacManager.applications().deleteById(application.id());
+                authorizationManager.applications().deleteById(application.id());
             }
         }
     }

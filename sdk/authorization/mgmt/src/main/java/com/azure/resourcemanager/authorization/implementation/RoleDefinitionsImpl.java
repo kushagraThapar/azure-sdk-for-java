@@ -6,20 +6,21 @@ package com.azure.resourcemanager.authorization.implementation;
 import com.azure.core.http.rest.PagedFlux;
 import com.azure.core.http.rest.PagedIterable;
 import com.azure.core.management.exception.ManagementException;
-import com.azure.resourcemanager.authorization.RoleDefinition;
-import com.azure.resourcemanager.authorization.RoleDefinitions;
-import com.azure.resourcemanager.authorization.models.RoleDefinitionInner;
-import com.azure.resourcemanager.authorization.models.RoleDefinitionsInner;
+import com.azure.resourcemanager.authorization.AuthorizationManager;
+import com.azure.resourcemanager.authorization.models.RoleDefinition;
+import com.azure.resourcemanager.authorization.models.RoleDefinitions;
+import com.azure.resourcemanager.authorization.fluent.inner.RoleDefinitionInner;
+import com.azure.resourcemanager.authorization.fluent.RoleDefinitionsClient;
 import com.azure.resourcemanager.resources.fluentcore.arm.collection.implementation.ReadableWrappersImpl;
 import com.azure.resourcemanager.resources.fluentcore.model.HasInner;
 import reactor.core.publisher.Mono;
 
 /** The implementation of RoleDefinitions and its parent interfaces. */
-class RoleDefinitionsImpl extends ReadableWrappersImpl<RoleDefinition, RoleDefinitionImpl, RoleDefinitionInner>
-    implements RoleDefinitions, HasInner<RoleDefinitionsInner> {
-    private final GraphRbacManager manager;
+public class RoleDefinitionsImpl extends ReadableWrappersImpl<RoleDefinition, RoleDefinitionImpl, RoleDefinitionInner>
+    implements RoleDefinitions, HasInner<RoleDefinitionsClient> {
+    private final AuthorizationManager manager;
 
-    RoleDefinitionsImpl(final GraphRbacManager manager) {
+    public RoleDefinitionsImpl(final AuthorizationManager manager) {
         this.manager = manager;
     }
 
@@ -84,12 +85,12 @@ class RoleDefinitionsImpl extends ReadableWrappersImpl<RoleDefinition, RoleDefin
     }
 
     @Override
-    public GraphRbacManager manager() {
+    public AuthorizationManager manager() {
         return this.manager;
     }
 
     @Override
-    public RoleDefinitionsInner inner() {
-        return manager().roleInner().roleDefinitions();
+    public RoleDefinitionsClient inner() {
+        return manager().roleInner().getRoleDefinitions();
     }
 }

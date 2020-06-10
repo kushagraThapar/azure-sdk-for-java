@@ -5,25 +5,28 @@ package com.azure.resourcemanager.authorization.implementation;
 
 import com.azure.core.http.rest.PagedFlux;
 import com.azure.core.http.rest.PagedIterable;
-import com.azure.resourcemanager.authorization.GraphErrorException;
-import com.azure.resourcemanager.authorization.ServicePrincipal;
-import com.azure.resourcemanager.authorization.ServicePrincipals;
-import com.azure.resourcemanager.authorization.models.ServicePrincipalInner;
-import com.azure.resourcemanager.authorization.models.ServicePrincipalsInner;
+import com.azure.resourcemanager.authorization.AuthorizationManager;
+import com.azure.resourcemanager.authorization.models.GraphErrorException;
+import com.azure.resourcemanager.authorization.models.ServicePrincipal;
+import com.azure.resourcemanager.authorization.models.ServicePrincipals;
+import com.azure.resourcemanager.authorization.fluent.inner.ServicePrincipalInner;
+import com.azure.resourcemanager.authorization.fluent.ServicePrincipalsClient;
 import com.azure.resourcemanager.resources.fluentcore.arm.collection.implementation.CreatableWrappersImpl;
 import com.azure.resourcemanager.resources.fluentcore.arm.models.HasManager;
 import com.azure.resourcemanager.resources.fluentcore.model.HasInner;
 import reactor.core.publisher.Mono;
 
 /** The implementation of ServicePrincipals and its parent interfaces. */
-class ServicePrincipalsImpl extends CreatableWrappersImpl<ServicePrincipal, ServicePrincipalImpl, ServicePrincipalInner>
-    implements ServicePrincipals, HasManager<GraphRbacManager>, HasInner<ServicePrincipalsInner> {
-    private ServicePrincipalsInner innerCollection;
-    private GraphRbacManager manager;
+public class ServicePrincipalsImpl
+    extends CreatableWrappersImpl<ServicePrincipal, ServicePrincipalImpl, ServicePrincipalInner>
+    implements ServicePrincipals, HasManager<AuthorizationManager>, HasInner<ServicePrincipalsClient> {
+    private ServicePrincipalsClient innerCollection;
+    private AuthorizationManager manager;
 
-    ServicePrincipalsImpl(final ServicePrincipalsInner client, final GraphRbacManager graphRbacManager) {
+    public ServicePrincipalsImpl(
+        final ServicePrincipalsClient client, final AuthorizationManager authorizationManager) {
         this.innerCollection = client;
-        this.manager = graphRbacManager;
+        this.manager = authorizationManager;
     }
 
     @Override
@@ -104,12 +107,12 @@ class ServicePrincipalsImpl extends CreatableWrappersImpl<ServicePrincipal, Serv
     }
 
     @Override
-    public GraphRbacManager manager() {
+    public AuthorizationManager manager() {
         return this.manager;
     }
 
     @Override
-    public ServicePrincipalsInner inner() {
-        return manager().inner().servicePrincipals();
+    public ServicePrincipalsClient inner() {
+        return manager().inner().getServicePrincipals();
     }
 }

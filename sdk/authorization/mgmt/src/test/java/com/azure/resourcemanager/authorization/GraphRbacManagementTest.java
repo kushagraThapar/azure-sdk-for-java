@@ -4,7 +4,6 @@
 package com.azure.resourcemanager.authorization;
 
 import com.azure.core.http.HttpPipeline;
-import com.azure.resourcemanager.authorization.implementation.GraphRbacManager;
 import com.azure.resourcemanager.resources.core.TestBase;
 import com.azure.resourcemanager.resources.fluentcore.profile.AzureProfile;
 import com.azure.resourcemanager.resources.ResourceManager;
@@ -14,12 +13,12 @@ import java.io.InputStream;
 
 /** The base for storage manager tests. */
 public abstract class GraphRbacManagementTest extends TestBase {
-    protected GraphRbacManager graphRbacManager;
+    protected AuthorizationManager authorizationManager;
     protected ResourceManager resourceManager;
 
     @Override
     protected void initializeClients(HttpPipeline httpPipeline, AzureProfile profile) {
-        graphRbacManager = GraphRbacManager.authenticate(httpPipeline, profile, sdkContext);
+        authorizationManager = AuthorizationManager.authenticate(httpPipeline, profile, sdkContext);
         resourceManager =
             ResourceManager.authenticate(httpPipeline, profile).withSdkContext(sdkContext).withDefaultSubscription();
     }

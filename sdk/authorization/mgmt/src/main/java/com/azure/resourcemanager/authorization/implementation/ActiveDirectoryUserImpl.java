@@ -3,11 +3,12 @@
 
 package com.azure.resourcemanager.authorization.implementation;
 
-import com.azure.resourcemanager.authorization.ActiveDirectoryUser;
-import com.azure.resourcemanager.authorization.PasswordProfile;
-import com.azure.resourcemanager.authorization.UserCreateParameters;
-import com.azure.resourcemanager.authorization.UserUpdateParameters;
-import com.azure.resourcemanager.authorization.models.UserInner;
+import com.azure.resourcemanager.authorization.AuthorizationManager;
+import com.azure.resourcemanager.authorization.models.ActiveDirectoryUser;
+import com.azure.resourcemanager.authorization.models.PasswordProfile;
+import com.azure.resourcemanager.authorization.models.UserCreateParameters;
+import com.azure.resourcemanager.authorization.models.UserUpdateParameters;
+import com.azure.resourcemanager.authorization.fluent.inner.UserInner;
 import com.azure.resourcemanager.resources.fluentcore.arm.CountryIsoCode;
 import com.azure.resourcemanager.resources.fluentcore.model.implementation.CreatableUpdatableImpl;
 import reactor.core.publisher.Mono;
@@ -16,12 +17,12 @@ import reactor.core.publisher.Mono;
 class ActiveDirectoryUserImpl extends CreatableUpdatableImpl<ActiveDirectoryUser, UserInner, ActiveDirectoryUserImpl>
     implements ActiveDirectoryUser, ActiveDirectoryUser.Definition, ActiveDirectoryUser.Update {
 
-    private final GraphRbacManager manager;
+    private final AuthorizationManager manager;
     private UserCreateParameters createParameters;
     private UserUpdateParameters updateParameters;
     private String emailAlias;
 
-    ActiveDirectoryUserImpl(UserInner innerObject, GraphRbacManager manager) {
+    ActiveDirectoryUserImpl(UserInner innerObject, AuthorizationManager manager) {
         super(innerObject.displayName(), innerObject);
         this.manager = manager;
         this.createParameters = new UserCreateParameters().withDisplayName(name()).withAccountEnabled(true);
@@ -81,7 +82,7 @@ class ActiveDirectoryUserImpl extends CreatableUpdatableImpl<ActiveDirectoryUser
 
     @Override
     protected Mono<UserInner> getInnerAsync() {
-        return manager.inner().users().getAsync(this.id());
+        return manager.inner().getUsers().getAsync(this.id());
     }
 
     @Override
@@ -96,7 +97,7 @@ class ActiveDirectoryUserImpl extends CreatableUpdatableImpl<ActiveDirectoryUser
             domain =
                 manager()
                     .inner()
-                    .domains()
+                    .getDomains()
                     .listAsync(null)
                     .map(
                         domainInner -> {
@@ -113,14 +114,14 @@ class ActiveDirectoryUserImpl extends CreatableUpdatableImpl<ActiveDirectoryUser
             domain = Mono.just(this);
         }
         return domain
-            .flatMap(activeDirectoryUser -> manager().inner().users().createAsync(createParameters))
+            .flatMap(activeDirectoryUser -> manager().inner().getUsers().createAsync(createParameters))
             .map(innerToFluentMap(this));
     }
 
     public Mono<ActiveDirectoryUser> updateResourceAsync() {
         return manager()
             .inner()
-            .users()
+            .getUsers()
             .updateAsync(id(), updateParameters)
             .then(ActiveDirectoryUserImpl.this.refreshAsync());
     }
@@ -162,7 +163,7 @@ class ActiveDirectoryUserImpl extends CreatableUpdatableImpl<ActiveDirectoryUser
     }
 
     @Override
-    public GraphRbacManager manager() {
+    public AuthorizationManager manager() {
         return this.manager;
     }
 }

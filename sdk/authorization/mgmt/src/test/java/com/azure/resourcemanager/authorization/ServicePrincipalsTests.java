@@ -3,6 +3,9 @@
 
 package com.azure.resourcemanager.authorization;
 
+import com.azure.resourcemanager.authorization.models.BuiltInRole;
+import com.azure.resourcemanager.authorization.models.RoleAssignment;
+import com.azure.resourcemanager.authorization.models.ServicePrincipal;
 import com.azure.resourcemanager.resources.models.ResourceGroup;
 import com.azure.resourcemanager.resources.fluentcore.arm.Region;
 import com.azure.resourcemanager.resources.fluentcore.utils.SdkContext;
@@ -24,7 +27,7 @@ public class ServicePrincipalsTests extends GraphRbacManagementTest {
         try {
             // Create
             servicePrincipal =
-                graphRbacManager
+                authorizationManager
                     .servicePrincipals()
                     .define(name)
                     .withNewApplication("http://easycreate.azure.com/" + name)
@@ -42,7 +45,7 @@ public class ServicePrincipalsTests extends GraphRbacManagementTest {
             Assertions.assertEquals(0, servicePrincipal.certificateCredentials().size());
 
             // Get
-            servicePrincipal = graphRbacManager.servicePrincipals().getByName(name);
+            servicePrincipal = authorizationManager.servicePrincipals().getByName(name);
             Assertions.assertNotNull(servicePrincipal);
             Assertions.assertNotNull(servicePrincipal.applicationId());
             Assertions.assertEquals(2, servicePrincipal.servicePrincipalNames().size());
@@ -66,10 +69,10 @@ public class ServicePrincipalsTests extends GraphRbacManagementTest {
             Assertions.assertEquals(1, servicePrincipal.certificateCredentials().size());
         } finally {
             if (servicePrincipal != null) {
-                graphRbacManager.servicePrincipals().deleteById(servicePrincipal.id());
-                graphRbacManager
+                authorizationManager.servicePrincipals().deleteById(servicePrincipal.id());
+                authorizationManager
                     .applications()
-                    .deleteById(graphRbacManager.applications().getByName(servicePrincipal.applicationId()).id());
+                    .deleteById(authorizationManager.applications().getByName(servicePrincipal.applicationId()).id());
             }
         }
     }
@@ -85,7 +88,7 @@ public class ServicePrincipalsTests extends GraphRbacManagementTest {
         try {
             // Create
             servicePrincipal =
-                graphRbacManager
+                authorizationManager
                     .servicePrincipals()
                     .define(name)
                     .withNewApplication("http://easycreate.azure.com/ansp/" + name)
@@ -134,13 +137,13 @@ public class ServicePrincipalsTests extends GraphRbacManagementTest {
             }
         } finally {
             try {
-                graphRbacManager.servicePrincipals().deleteById(servicePrincipal.id());
+                authorizationManager.servicePrincipals().deleteById(servicePrincipal.id());
             } catch (Exception e) {
             }
             try {
-                graphRbacManager
+                authorizationManager
                     .applications()
-                    .deleteById(graphRbacManager.applications().getByName(servicePrincipal.applicationId()).id());
+                    .deleteById(authorizationManager.applications().getByName(servicePrincipal.applicationId()).id());
             } catch (Exception e) {
             }
         }

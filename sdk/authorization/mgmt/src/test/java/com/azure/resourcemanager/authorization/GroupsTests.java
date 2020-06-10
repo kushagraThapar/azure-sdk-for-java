@@ -3,6 +3,10 @@
 
 package com.azure.resourcemanager.authorization;
 
+import com.azure.resourcemanager.authorization.models.ActiveDirectoryGroup;
+import com.azure.resourcemanager.authorization.models.ActiveDirectoryObject;
+import com.azure.resourcemanager.authorization.models.ActiveDirectoryUser;
+import com.azure.resourcemanager.authorization.models.ServicePrincipal;
 import com.azure.resourcemanager.resources.fluentcore.utils.SdkContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -24,18 +28,18 @@ public class GroupsTests extends GraphRbacManagementTest {
         ActiveDirectoryGroup group2 = null;
         try {
             user =
-                graphRbacManager
+                authorizationManager
                     .users()
                     .define(userName)
                     .withEmailAlias(userName)
                     .withPassword("StrongPass!123")
                     .create();
             servicePrincipal =
-                graphRbacManager.servicePrincipals().define(spName).withNewApplication("https://" + spName).create();
-            group1 = graphRbacManager.groups().define(group1Name).withEmailAlias(group1Name).create();
+                authorizationManager.servicePrincipals().define(spName).withNewApplication("https://" + spName).create();
+            group1 = authorizationManager.groups().define(group1Name).withEmailAlias(group1Name).create();
             SdkContext.sleep(15000);
             group2 =
-                graphRbacManager
+                authorizationManager
                     .groups()
                     .define(group2Name)
                     .withEmailAlias(group2Name)
@@ -54,7 +58,7 @@ public class GroupsTests extends GraphRbacManagementTest {
             Assertions.assertNotNull(iterator.next().id());
         } finally {
             if (servicePrincipal != null) {
-                graphRbacManager.servicePrincipals().deleteById(servicePrincipal.id());
+                authorizationManager.servicePrincipals().deleteById(servicePrincipal.id());
             }
             // cannot delete users or groups from service principal
             //            if (user != null) {

@@ -3,6 +3,7 @@
 
 package com.azure.resourcemanager.authorization;
 
+import com.azure.resourcemanager.authorization.models.ActiveDirectoryUser;
 import com.azure.resourcemanager.resources.fluentcore.arm.CountryIsoCode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
@@ -12,21 +13,21 @@ public class UsersTests extends GraphRbacManagementTest {
     @Test
     @Disabled("Need a specific domain")
     public void canGetUserByEmail() throws Exception {
-        ActiveDirectoryUser user = graphRbacManager.users().getByName("admin@azuresdkteam.onmicrosoft.com");
+        ActiveDirectoryUser user = authorizationManager.users().getByName("admin@azuresdkteam.onmicrosoft.com");
         Assertions.assertEquals("Admin", user.name());
     }
 
     @Test
     @Disabled("Need a specific domain")
     public void canGetUserByForeignEmail() throws Exception {
-        ActiveDirectoryUser user = graphRbacManager.users().getByName("jianghlu@microsoft.com");
+        ActiveDirectoryUser user = authorizationManager.users().getByName("jianghlu@microsoft.com");
         Assertions.assertEquals("Jianghao Lu", user.name());
     }
 
     @Test
     @Disabled("Need a specific domain")
     public void canGetUserByDisplayName() throws Exception {
-        ActiveDirectoryUser user = graphRbacManager.users().getByName("Reader zero");
+        ActiveDirectoryUser user = authorizationManager.users().getByName("Reader zero");
         Assertions.assertEquals("Reader zero", user.name());
     }
 
@@ -34,7 +35,7 @@ public class UsersTests extends GraphRbacManagementTest {
     public void canCreateUser() throws Exception {
         String name = sdkContext.randomResourceName("user", 16);
         ActiveDirectoryUser user =
-            graphRbacManager
+            authorizationManager
                 .users()
                 .define("Automatic " + name)
                 .withEmailAlias(name)
@@ -50,7 +51,7 @@ public class UsersTests extends GraphRbacManagementTest {
     public void canUpdateUser() throws Exception {
         String name = sdkContext.randomResourceName("user", 16);
         ActiveDirectoryUser user =
-            graphRbacManager
+            authorizationManager
                 .users()
                 .define("Test " + name)
                 .withEmailAlias(name)

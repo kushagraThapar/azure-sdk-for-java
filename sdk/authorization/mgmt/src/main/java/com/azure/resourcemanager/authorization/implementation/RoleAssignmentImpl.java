@@ -5,13 +5,14 @@ package com.azure.resourcemanager.authorization.implementation;
 
 import com.azure.core.management.exception.ManagementException;
 import com.azure.core.util.logging.ClientLogger;
-import com.azure.resourcemanager.authorization.ActiveDirectoryGroup;
-import com.azure.resourcemanager.authorization.ActiveDirectoryUser;
-import com.azure.resourcemanager.authorization.BuiltInRole;
-import com.azure.resourcemanager.authorization.RoleAssignment;
-import com.azure.resourcemanager.authorization.RoleAssignmentCreateParameters;
-import com.azure.resourcemanager.authorization.ServicePrincipal;
-import com.azure.resourcemanager.authorization.models.RoleAssignmentInner;
+import com.azure.resourcemanager.authorization.AuthorizationManager;
+import com.azure.resourcemanager.authorization.models.ActiveDirectoryGroup;
+import com.azure.resourcemanager.authorization.models.ActiveDirectoryUser;
+import com.azure.resourcemanager.authorization.models.BuiltInRole;
+import com.azure.resourcemanager.authorization.models.RoleAssignment;
+import com.azure.resourcemanager.authorization.models.RoleAssignmentCreateParameters;
+import com.azure.resourcemanager.authorization.models.ServicePrincipal;
+import com.azure.resourcemanager.authorization.fluent.inner.RoleAssignmentInner;
 import com.azure.resourcemanager.resources.models.ResourceGroup;
 import com.azure.resourcemanager.resources.fluentcore.arm.models.Resource;
 import com.azure.resourcemanager.resources.fluentcore.model.implementation.CreatableImpl;
@@ -26,7 +27,7 @@ import java.util.Locale;
 /** Implementation for ServicePrincipal and its parent interfaces. */
 class RoleAssignmentImpl extends CreatableImpl<RoleAssignment, RoleAssignmentInner, RoleAssignmentImpl>
     implements RoleAssignment, RoleAssignment.Definition {
-    private GraphRbacManager manager;
+    private AuthorizationManager manager;
     // Active Directory identify info
     private String objectId;
     private String userName;
@@ -36,7 +37,7 @@ class RoleAssignmentImpl extends CreatableImpl<RoleAssignment, RoleAssignmentInn
     private String roleName;
     private final ClientLogger logger = new ClientLogger(RoleAssignmentImpl.class);
 
-    RoleAssignmentImpl(String name, RoleAssignmentInner innerObject, GraphRbacManager manager) {
+    RoleAssignmentImpl(String name, RoleAssignmentInner innerObject, AuthorizationManager manager) {
         super(name, innerObject);
         this.manager = manager;
     }
@@ -86,7 +87,7 @@ class RoleAssignmentImpl extends CreatableImpl<RoleAssignment, RoleAssignmentInn
                 roleAssignmentPropertiesInner ->
                     manager()
                         .roleInner()
-                        .roleAssignments()
+                        .getRoleAssignments()
                         .createAsync(scope(), name(), roleAssignmentPropertiesInner)
                         .retryWhen(
                             throwableFlux ->
@@ -119,7 +120,7 @@ class RoleAssignmentImpl extends CreatableImpl<RoleAssignment, RoleAssignmentInn
 
     @Override
     protected Mono<RoleAssignmentInner> getInnerAsync() {
-        return manager.roleInner().roleAssignments().getAsync(scope(), name());
+        return manager.roleInner().getRoleAssignments().getAsync(scope(), name());
     }
 
     @Override
@@ -212,7 +213,7 @@ class RoleAssignmentImpl extends CreatableImpl<RoleAssignment, RoleAssignmentInn
     }
 
     @Override
-    public GraphRbacManager manager() {
+    public AuthorizationManager manager() {
         return this.manager;
     }
 }

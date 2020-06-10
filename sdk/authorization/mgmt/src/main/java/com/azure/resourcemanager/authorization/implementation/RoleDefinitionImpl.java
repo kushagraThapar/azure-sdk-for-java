@@ -3,10 +3,11 @@
 
 package com.azure.resourcemanager.authorization.implementation;
 
-import com.azure.resourcemanager.authorization.Permission;
-import com.azure.resourcemanager.authorization.RoleDefinition;
-import com.azure.resourcemanager.authorization.models.PermissionInner;
-import com.azure.resourcemanager.authorization.models.RoleDefinitionInner;
+import com.azure.resourcemanager.authorization.AuthorizationManager;
+import com.azure.resourcemanager.authorization.models.Permission;
+import com.azure.resourcemanager.authorization.models.RoleDefinition;
+import com.azure.resourcemanager.authorization.fluent.inner.PermissionInner;
+import com.azure.resourcemanager.authorization.fluent.inner.RoleDefinitionInner;
 import com.azure.resourcemanager.resources.fluentcore.model.implementation.WrapperImpl;
 import java.util.Collections;
 import java.util.HashSet;
@@ -14,7 +15,7 @@ import java.util.Set;
 
 /** Implementation for ServicePrincipal and its parent interfaces. */
 class RoleDefinitionImpl extends WrapperImpl<RoleDefinitionInner> implements RoleDefinition {
-    private GraphRbacManager manager;
+    private AuthorizationManager manager;
     // Active Directory identify info
     // private String objectId;
     // private String userName;
@@ -23,7 +24,7 @@ class RoleDefinitionImpl extends WrapperImpl<RoleDefinitionInner> implements Rol
     // private String roleDefinitionId;
     // private String roleName;
 
-    RoleDefinitionImpl(RoleDefinitionInner innerObject, GraphRbacManager manager) {
+    RoleDefinitionImpl(RoleDefinitionInner innerObject, AuthorizationManager manager) {
         super(innerObject);
         this.manager = manager;
     }
@@ -63,7 +64,7 @@ class RoleDefinitionImpl extends WrapperImpl<RoleDefinitionInner> implements Rol
     }
 
     @Override
-    public GraphRbacManager manager() {
+    public AuthorizationManager manager() {
         return this.manager;
     }
 

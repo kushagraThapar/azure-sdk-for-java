@@ -3,6 +3,7 @@
 
 package com.azure.resourcemanager.authorization;
 
+import com.azure.resourcemanager.authorization.models.RoleDefinition;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -10,7 +11,7 @@ public class RoleDefinitionTests extends GraphRbacManagementTest {
     @Test
     public void canGetRoleByRoleName() throws Exception {
         RoleDefinition roleDefinition =
-            graphRbacManager
+            authorizationManager
                 .roleDefinitions()
                 .getByScopeAndRoleName("subscriptions/" + resourceManager.subscriptionId(), "Contributor");
         Assertions.assertNotNull(roleDefinition);
