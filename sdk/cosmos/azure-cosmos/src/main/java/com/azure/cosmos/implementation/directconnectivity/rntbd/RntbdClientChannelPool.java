@@ -58,6 +58,58 @@ import static com.azure.cosmos.implementation.guava27.Strings.lenientFormat;
 
 /**
  * A {@link ChannelPool} implementation that enforces a maximum number of concurrent direct TCP Cosmos connections.
+ *
+ * RntbdClientChannelPool: Actors
+ * 	- acquire (RntbdServiceEndpoint): acquire a channel to use
+ * 	- release (RntbdServiceEndpoint): channel usage is complete and returning it back to pool
+ * 	- Channel.closeChannel() Future: Event handling notifying the channel termination to refresh bookkeeping
+ * 	- acquisitionTimeoutTimer: channel acquisition time-out handler
+ * 	- monitoring (through RntbdServiceEndpoint): get monitoring metrics
+ *
+ * 	Behaviors/Expectations:
+ * 	    - Bounds:
+ * 	        - max requests in-flight per channelPool: MAX_CHANNELS_PER_ENDPOINT * MAX_REQUESTS_ENDPOINT (NOT A GUARANTEE)
+ * 	        - AvailableChannels.size() + AcquiredChannels.size() + (connections in connecting state, i.e., connecting.get()) <= MAX_CHANNELS_PER_ENDPOINT
+ * 	        - PendingAcquisition queue default-size: Max(10_000, MAX_CHANNELS_PER_ENDPOINT * MAX_REQUESTS_ENDPOINT)
+ * 	        - ChannelPool executor included event-loop task: MAX_CHANNELS_PER_ENDPOINT * MAX_REQUESTS_ENDPOINT + newInFlightAcquisitions (not yet in pendingAcquisitionQueue)
+ * 	            - newInFlightAcquisitions: is expected to very very short. Hard-bound to ADMINSSON_CONTROL (upstream in RntbdServiceEndpoint)
+ * 	    - NewChannel vs ReUseChannel:
+ * 	        - NewChannels are serially created (reasonable current state, possible future change, upstream please DON'T TAKE any dependency)
+ * 	        - Will re-use an existing channel when possible (with MAX_REQUESTS_ENDPOINT attempt not GUARANTEED)
+ * 	        - Channel usage fairness: fairness is attempted but not guaranteed
+ * 	            - When loadFactor is > 90%, fairness is attempted by selecting Channel with less concurrency
+ * 	            - Otherwise no guarantees on fairness per channel with-in bounds of MAX_REQUESTS_ENDPOINT. I.e. some channel might have high request concurrency compared to others
+ * 	    - Channel serving guarantees:
+ * 	        - Ordered delivery is not guaranteed (by-design)
+ * 	        - Fairness is attempted but not a guarantee
+ * 	        - [UNRELATED TO CHANNEL-POOL] [CURRENT DESIGN]: RntbdServiceEndpoint.write releases Channel before its usage -> acquisition order and channel user order might differ.
+ * 	    - AcquisitionTimeout: if not can't be served in an expected time, fails gracefully
+ * 	    - Metrics: are approximations and might be in-consistent(by-design) as well
+ * 	    - EventLoop
+ * 	        - ChannelPool executor might be shared across ChannelPools or Channel
+ *
+ * 	Design Notes:
+ * 	    - channelPool.eventLoop{@Link executor}: (executes on a single & same thread, serially)
+ * 	        - Each channelPool gets an EventLoop (selection is round-robin)
+ * 	        - Schedule only when it can be served immediately
+ * 	        - Updates and reads that depend on "strong consistency" - like whether to create a new connection or not.
+ * 	            - Updates to below data structures should be done only when inside eventLoop
+ * 	            - {@Link acquiredChannels}
+ * 	            - {@Link availableChannels}
+ * 	    - AcquisitionTimeout handling:
+ * 	        - A global single threaded scheduler
+ * 	        - [***] Each channel independently schedules acquisitionTimeout handlers
+ * 	        - touches {@Link pendingAcquisitions} might result in impacting the fairness
+ * 	    - RntbdServiceEndpoint.write:
+ * 	        - Promise<Channel> might AcquisitionTimeout
+ * 	        - RntbdServiceEndpoint.writeWhenConnected
+ * 	            - releaseToPool immediately -> unblocks next acquisition if-any
+ * 	            - **Uses Channel even after release**, in channelEventLoop [Not a functional issue but to be noted]
+ * 	                - Possible that acquisition order might differ the ChannelWrite order
+ * 	    - MAX_REQUESTS_ENDPOINT: Truth managed by RntbdRequestManager in Channel.Pipeline
+ * 	        - RequestManager only known when the Channel process them.
+ * 	        - In-flight scheduled ones are unknown -> its a SOFT BOUND
+ *
  */
 @JsonSerialize(using = RntbdClientChannelPool.JsonSerializer.class)
 public final class RntbdClientChannelPool implements ChannelPool {
@@ -95,13 +147,6 @@ public final class RntbdClientChannelPool implements ChannelPool {
         true,
         Thread.NORM_PRIORITY));
 
-    // this is only for debugging monitoring of the health of RNTBD
-    // TODO: once we are certain no task gets stuck in the rntbd queue remove this
-    private static final EventExecutor monitoringRntbdChannelPool = new DefaultEventExecutor(new RntbdThreadFactory(
-        "monitoring-rntbd-channel-pool",
-        true,
-        Thread.MIN_PRIORITY));
-
     private static final HashedWheelTimer acquisitionAndIdleEndpointDetectionTimer =
         new HashedWheelTimer(new RntbdThreadFactory(
             "channel-acquisition-timer",
@@ -114,6 +159,7 @@ public final class RntbdClientChannelPool implements ChannelPool {
     private final Runnable acquisitionTimeoutTask;
     private final PooledByteBufAllocatorMetric allocatorMetric;
     private final Bootstrap bootstrap;
+    private final RntbdServiceEndpoint endpoint;
     private final EventExecutor executor;
     private final ChannelHealthChecker healthChecker;
     // private final ScheduledFuture<?> idleStateDetectionScheduledFuture;
@@ -138,10 +184,6 @@ public final class RntbdClientChannelPool implements ChannelPool {
 
     private final ScheduledFuture<?> pendingAcquisitionExpirationFuture;
 
-    // this is only for debugging monitoring of the health of RNTBD
-    // TODO: once we are certain no task gets stuck in the rntbd queue remove this
-    private final ScheduledFuture<?> monitoringFuture;
-
     /**
      * Initializes a newly created {@link RntbdClientChannelPool} instance.
      *
@@ -163,6 +205,7 @@ public final class RntbdClientChannelPool implements ChannelPool {
         checkNotNull(config, "expected non-null config");
         checkNotNull(healthChecker, "expected non-null healthChecker");
 
+        this.endpoint = endpoint;
         this.poolHandler = new RntbdClientChannelHandler(config, healthChecker);
         this.executor = bootstrap.config().group().next();
         this.healthChecker = healthChecker;
@@ -231,7 +274,6 @@ public final class RntbdClientChannelPool implements ChannelPool {
 //                this.runTasksInPendingAcquisitionQueue();
 //
 //            }, requestTimerResolutionInNanos, requestTimerResolutionInNanos, TimeUnit.NANOSECONDS);
-        monitoringFuture = startMonitoring();
     }
 
     // region Accessors
@@ -272,6 +314,26 @@ public final class RntbdClientChannelPool implements ChannelPool {
      */
     public int channelsAvailableMetrics() {
         return this.availableChannels.size();
+    }
+
+    /**
+     * Gets the number of connections which are getting established.
+     *
+     * @return the number of connections which are getting established.
+     */
+    public int attemptingToConnectMetrics() {
+        return this.connecting.get() ? 1 : 0;
+    }
+
+    /**
+     * Gets the current tasks in the executor pool
+     *
+     * NOTE: this only provides approximation for metrics
+     *
+     * @return the current tasks in the executor pool
+     */
+    public int executorTaskQueueMetrics() {
+        return RntbdUtils.tryGetExecutorTaskQueueSize(this.executor);
     }
 
     /**
@@ -410,9 +472,7 @@ public final class RntbdClientChannelPool implements ChannelPool {
                 this.executor.submit(this::doClose).awaitUninterruptibly(); // block until complete
             }
         }
-
         this.pendingAcquisitionExpirationFuture.cancel(false);
-        this.monitoringFuture.cancel(false);
     }
 
     /**
@@ -555,7 +615,7 @@ public final class RntbdClientChannelPool implements ChannelPool {
             }
 
             // make sure to retrieve the actual channel count to avoid establishing more
-            // TCP connections than allowed. 
+            // TCP connections than allowed.
             final int channelCount = this.channels(false);
 
             if (channelCount < this.maxChannels) {
@@ -1116,7 +1176,7 @@ public final class RntbdClientChannelPool implements ChannelPool {
             return first;  // because this.close -> this.close0 -> this.pollChannel
         }
 
-        // Only return channels as servicable here if less than maxPendingRequests 
+        // Only return channels as servicable here if less than maxPendingRequests
         // are queued on them
         if (this.isChannelServiceable(first)) {
             return first;
@@ -1129,7 +1189,7 @@ public final class RntbdClientChannelPool implements ChannelPool {
 
             if (next.isActive()) {
 
-                // Only return channels as servicable here if less than maxPendingRequests 
+                // Only return channels as servicable here if less than maxPendingRequests
                 // are queued on them
                 if (this.isChannelServiceable(next)) {
                     return next;
@@ -1450,33 +1510,27 @@ public final class RntbdClientChannelPool implements ChannelPool {
             long currentNanoTime = System.nanoTime();
 
             while (true) {
-                try {
-                    AcquireListener removedTask = this.pool.pendingAcquisitions.poll();
-                    if (removedTask == null) {
-                        // queue is empty
-                        break;
-                    }
+                AcquireListener removedTask = this.pool.pendingAcquisitions.poll();
+                if (removedTask == null) {
+                    // queue is empty
+                    break;
+                }
 
-                    long expiryTime = removedTask.getAcquisitionTimeoutInNanos();
+                long expiryTime = removedTask.getAcquisitionTimeoutInNanos();
 
-                    // Compare nanoTime as described in the System.nanoTime documentation
-                    // See:
-                    // * https://docs.oracle.com/javase/7/docs/api/java/lang/System.html#nanoTime()
-                    // * https://github.com/netty/netty/issues/3705
-                    if (expiryTime - currentNanoTime < 0) {
-                        this.onTimeout(removedTask);
-                    } else {
-                        if (!this.pool.pendingAcquisitions.offer(removedTask)) {
-                            logger.error("Unexpected failure when returning the removed task"
-                                    + " to pending acquisition queue. current size [{}]",
-                                this.pool.pendingAcquisitions.size());
-                        }
-                        break;
+                // Compare nanoTime as described in the System.nanoTime documentation
+                // See:
+                // * https://docs.oracle.com/javase/7/docs/api/java/lang/System.html#nanoTime()
+                // * https://github.com/netty/netty/issues/3705
+                if (expiryTime - currentNanoTime <= 0) {
+                    this.onTimeout(removedTask);
+                } else {
+                    if (!this.pool.pendingAcquisitions.offer(removedTask)) {
+                        logger.error("Unexpected failure when returning the removed task"
+                                + " to pending acquisition queue. current size [{}]",
+                            this.pool.pendingAcquisitions.size());
                     }
-                } catch (Exception e) {
-                    logger.error("Unexpected failure in clearing the expired tasks"
-                        + " in pending acquisition queue. current size [{}]",
-                        this.pool.pendingAcquisitions.size(), e);
+                    break;
                 }
             }
         }
@@ -1533,37 +1587,4 @@ public final class RntbdClientChannelPool implements ChannelPool {
 
     // endregion
 
-    // TODO: remove when we are confident of RNTBD OOM bug
-    private ScheduledFuture<?> startMonitoring() {
-        return monitoringRntbdChannelPool.scheduleAtFixedRate(() -> {
-            int i = getTaskCount();
-            if (isInterestingEndpoint()) {
-                logger.debug("{} total number of tasks on the executor [{}], remote address: [{}], connecting [{}], acquiredChannel [{}], availableChannel [{}], pending acquisition [{}]",
-                    this.hashCode(), i, this.remoteAddress(), connecting.get(), acquiredChannels.size(), availableChannels.size(), pendingAcquisitions.size());
-            }
-        }, 0, 60, TimeUnit.SECONDS);
-    }
-
-    // TODO: remove when we are confident of RNTBD OOM bug
-    private boolean isInterestingEndpoint() {
-        return true;
-    }
-
-    // TODO: remove when we are confident of RNTBD OOM bug
-    public int getTaskCount() {
-
-        try {
-            SingleThreadEventExecutor singleThreadEventExecutor = Utils.as(this.executor,
-                SingleThreadEventExecutor.class);
-
-            if (singleThreadEventExecutor != null) {
-                return singleThreadEventExecutor.pendingTasks();
-            }
-        } catch (RuntimeException e) {
-            if (logger.isDebugEnabled()) {
-                logger.debug("task-queue unexpected monitoring failure", e);
-            }
-        }
-        return -1;
-    }
 }
