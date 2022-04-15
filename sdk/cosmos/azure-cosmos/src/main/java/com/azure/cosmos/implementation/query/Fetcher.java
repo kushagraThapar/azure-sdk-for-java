@@ -89,8 +89,8 @@ abstract class Fetcher<T extends Resource> {
             // if fullyDrained then done
             !this.isFullyDrained(this.isChangeFeed, response);
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("Fetcher state updated: " +
+        if (logger.isInfoEnabled()) {
+            logger.info("Fetcher state updated: " +
                     "isChangeFeed = {}, continuation token = {}, max item count = {}, should fetch more = {}",
                 isChangeFeed, this.getContinuationForLogging(), maxItemCount, shouldFetchMore);
         }
