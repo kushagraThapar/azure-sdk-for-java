@@ -105,7 +105,6 @@ public class GatewayAddressCacheTest extends TestSuiteBase {
                 null,
                 getHttpClient(configs),
                 false,
-                null,
                 null);
         for (int i = 0; i < 2; i++) {
             RxDocumentServiceRequest req =
@@ -141,7 +140,7 @@ public class GatewayAddressCacheTest extends TestSuiteBase {
                                                             null,
                                                             getHttpClient(configs),
                                                             false,
-                                                            null, null);
+                                                            null);
         for (int i = 0; i < 2; i++) {
             RxDocumentServiceRequest req =
                 RxDocumentServiceRequest.create(mockDiagnosticsClientContext(), OperationType.Create, ResourceType.Database,
@@ -187,7 +186,7 @@ public class GatewayAddressCacheTest extends TestSuiteBase {
                                                             null,
                                                             getHttpClient(configs),
                                                             false,
-                                                            null, null);
+                                                            null);
 
         RxDocumentServiceRequest req =
                 RxDocumentServiceRequest.create(mockDiagnosticsClientContext(), OperationType.Create, ResourceType.Document,
@@ -226,7 +225,7 @@ public class GatewayAddressCacheTest extends TestSuiteBase {
             null,
             httpClientWrapper.getSpyHttpClient(),
             true,
-            null, null);
+            null);
 
         RxDocumentServiceRequest req =
             RxDocumentServiceRequest.create(mockDiagnosticsClientContext(), OperationType.Create, ResourceType.Document,
@@ -293,7 +292,7 @@ public class GatewayAddressCacheTest extends TestSuiteBase {
                                                             null,
                                                             httpClientWrapper.getSpyHttpClient(),
                                                             false,
-                                                            null, null);
+                                                            null);
 
         String collectionRid = createdCollection.getResourceId();
 
@@ -351,7 +350,7 @@ public class GatewayAddressCacheTest extends TestSuiteBase {
                                                             null,
                                                             httpClientWrapper.getSpyHttpClient(),
                                                             false,
-                                                            null, null);
+                                                            null);
 
         String collectionRid = createdCollection.getResourceId();
 
@@ -412,7 +411,7 @@ public class GatewayAddressCacheTest extends TestSuiteBase {
                                                                 httpClientWrapper.getSpyHttpClient(),
                                                                 suboptimalRefreshTime,
                                                                 false,
-                                                                null, null);
+                                                                null);
 
         String collectionRid = createdCollection.getResourceId();
 
@@ -519,7 +518,7 @@ public class GatewayAddressCacheTest extends TestSuiteBase {
                                                             null,
                                                             getHttpClient(configs),
                                                             false,
-                                                            null, null);
+                                                            null);
 
         RxDocumentServiceRequest req =
                 RxDocumentServiceRequest.create(mockDiagnosticsClientContext(), OperationType.Create, ResourceType.Database,
@@ -568,7 +567,7 @@ public class GatewayAddressCacheTest extends TestSuiteBase {
                                                             clientWrapper.getSpyHttpClient(),
                                                             suboptimalPartitionForceRefreshIntervalInSeconds,
                                                             false,
-                                                            null, null);
+                                                            null);
 
         RxDocumentServiceRequest req =
                 RxDocumentServiceRequest.create(mockDiagnosticsClientContext(), OperationType.Create, ResourceType.Database,
@@ -616,7 +615,7 @@ public class GatewayAddressCacheTest extends TestSuiteBase {
                                                             null,
                                                             clientWrapper.getSpyHttpClient(),
                                                             false,
-                                                            null, null);
+                                                            null);
 
         RxDocumentServiceRequest req =
                 RxDocumentServiceRequest.create(mockDiagnosticsClientContext(), OperationType.Create, ResourceType.Database,
@@ -671,7 +670,7 @@ public class GatewayAddressCacheTest extends TestSuiteBase {
                                                                 clientWrapper.getSpyHttpClient(),
                                                                 refreshPeriodInSeconds,
                                                                 false,
-                                                                ApiType.SQL, null);
+                                                                ApiType.SQL);
 
         GatewayAddressCache spyCache = Mockito.spy(origCache);
 
@@ -766,7 +765,7 @@ public class GatewayAddressCacheTest extends TestSuiteBase {
                                                                 clientWrapper.getSpyHttpClient(),
                                                                 refreshPeriodInSeconds,
                                                                 false,
-                                                                null, null);
+                                                                null);
 
         GatewayAddressCache spyCache = Mockito.spy(origCache);
 

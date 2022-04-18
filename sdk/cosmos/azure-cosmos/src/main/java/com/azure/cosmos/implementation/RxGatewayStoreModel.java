@@ -352,26 +352,21 @@ class RxGatewayStoreModel implements RxStoreModel {
                                    content);
                                DirectBridgeInternal.setRequestTimeline(rsp, reactorNettyRequestRecord.takeTimelineSnapshot());
                                if (request.requestContext.cosmosDiagnostics != null) {
-                                   BridgeInternal.recordGatewayResponse(request.requestContext.cosmosDiagnostics, request, rsp, null, globalEndpointManager);
-//                                   DirectBridgeInternal.setCosmosDiagnostics(rsp, request.requestContext.cosmosDiagnostics);
+                                   BridgeInternal.recordGatewayResponse(request.requestContext.cosmosDiagnostics, request, rsp, null);
+                                   DirectBridgeInternal.setCosmosDiagnostics(rsp, request.requestContext.cosmosDiagnostics);
                                }
                                return rsp;
                        })
                        .single();
 
         }).map(rsp -> {
-            RxDocumentServiceResponse rxDocumentServiceResponse;
             if (httpRequest.reactorNettyRequestRecord() != null) {
-                rxDocumentServiceResponse =
-                    new RxDocumentServiceResponse(this.clientContext, rsp,
+                return new RxDocumentServiceResponse(this.clientContext, rsp,
                     httpRequest.reactorNettyRequestRecord().takeTimelineSnapshot());
 
             } else {
-                rxDocumentServiceResponse =
-                    new RxDocumentServiceResponse(this.clientContext, rsp);
+                return new RxDocumentServiceResponse(this.clientContext, rsp);
             }
-            rxDocumentServiceResponse.setCosmosDiagnostics(request.requestContext.cosmosDiagnostics);
-            return rxDocumentServiceResponse;
         }).onErrorResume(throwable -> {
                        Throwable unwrappedException = reactor.core.Exceptions.unwrap(throwable);
                        if (!(unwrappedException instanceof Exception)) {
@@ -415,7 +410,7 @@ class RxGatewayStoreModel implements RxStoreModel {
                                    httpRequest.reactorNettyRequestRecord().takeTimelineSnapshot());
                            }
 
-                           BridgeInternal.recordGatewayResponse(request.requestContext.cosmosDiagnostics, request, null, dce, globalEndpointManager);
+                           BridgeInternal.recordGatewayResponse(request.requestContext.cosmosDiagnostics, request, null, dce);
                            BridgeInternal.setCosmosDiagnostics(dce, request.requestContext.cosmosDiagnostics);
                        }
 
@@ -508,7 +503,7 @@ class RxGatewayStoreModel implements RxStoreModel {
                     }
 
                     if (Exceptions.isThroughputControlRequestRateTooLargeException(dce)) {
-                        BridgeInternal.recordGatewayResponse(request.requestContext.cosmosDiagnostics, request, null, dce, globalEndpointManager);
+                        BridgeInternal.recordGatewayResponse(request.requestContext.cosmosDiagnostics, request, null, dce);
                         BridgeInternal.setCosmosDiagnostics(dce, request.requestContext.cosmosDiagnostics);
                     }
 

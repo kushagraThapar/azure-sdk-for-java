@@ -35,8 +35,8 @@ public final class CosmosDiagnostics {
     static final String USER_AGENT = Utils.getUserAgent();
     static final String USER_AGENT_KEY = "userAgent";
 
-    CosmosDiagnostics(DiagnosticsClientContext diagnosticsClientContext) {
-        this.clientSideRequestStatistics = new ClientSideRequestStatistics(diagnosticsClientContext);
+    CosmosDiagnostics(DiagnosticsClientContext diagnosticsClientContext, GlobalEndpointManager globalEndpointManager) {
+        this.clientSideRequestStatistics = new ClientSideRequestStatistics(diagnosticsClientContext, globalEndpointManager);
     }
 
     CosmosDiagnostics(FeedResponseDiagnostics feedResponseDiagnostics) {

@@ -25,10 +25,9 @@ public class StoreResponse {
     final private String[] responseHeaderValues;
     final private byte[] content;
 
-//    private CosmosDiagnostics cosmosDiagnostics;
+    private CosmosDiagnostics cosmosDiagnostics;
     private int pendingRequestQueueSize;
     private int requestPayloadLength;
-    private int responsePayloadLength;
     private RequestTimeline requestTimeline;
     private RntbdChannelAcquisitionTimeline channelAcquisitionTimeline;
     private int rntbdChannelTaskQueueSize;
@@ -55,9 +54,6 @@ public class StoreResponse {
 
         this.status = status;
         this.content = content;
-        if (this.content != null) {
-            this.responsePayloadLength = this.content.length;
-        }
     }
 
     public int getStatus() {
@@ -117,7 +113,7 @@ public class StoreResponse {
     }
 
     public int getResponseBodyLength() {
-        return this.responsePayloadLength;
+        return (this.content != null) ? this.content.length : 0;
     }
 
     public long getLSN() {
@@ -151,9 +147,9 @@ public class StoreResponse {
         return null;
     }
 
-//    public CosmosDiagnostics getCosmosDiagnostics() {
-//        return cosmosDiagnostics;
-//    }
+    public CosmosDiagnostics getCosmosDiagnostics() {
+        return cosmosDiagnostics;
+    }
 
     public double getRequestCharge() {
         String value = this.getHeaderValue(HttpConstants.HttpHeaders.REQUEST_CHARGE);
@@ -163,22 +159,10 @@ public class StoreResponse {
         return Double.parseDouble(value);
     }
 
-    /**
-     * Static factory method to create serializable store response to be used in CosmosDiagnostics
-     * @param storeResponse store response
-     * @return serializable store response
-     */
-    public static StoreResponse createSerializableStoreResponse(StoreResponse storeResponse) {
-        if (storeResponse == null) {
-            return null;
-        }
-        return new StoreResponse(storeResponse);
+    StoreResponse setCosmosDiagnostics(CosmosDiagnostics cosmosDiagnostics) {
+        this.cosmosDiagnostics = cosmosDiagnostics;
+        return this;
     }
-
-//    StoreResponse setCosmosDiagnostics(CosmosDiagnostics cosmosDiagnostics) {
-//        this.cosmosDiagnostics = cosmosDiagnostics;
-//        return this;
-//    }
 
     void setRequestTimeline(RequestTimeline requestTimeline) {
         this.requestTimeline = requestTimeline;
@@ -215,28 +199,5 @@ public class StoreResponse {
             }
         }
         return subStatusCode;
-    }
-
-    /**
-     * Private copy constructor, only to be used internally for serialization purposes
-     * <p>
-     * NOTE: This constructor does not copy all the fields to avoid memory issues.
-     */
-    private StoreResponse(StoreResponse storeResponse) {
-        this.responseHeaderValues = null;
-        this.responseHeaderNames = null;
-        this.content = null;
-        //  Setting cosmosDiagnostics null to break circular dependency
-//        this.cosmosDiagnostics = null;
-        this.status = storeResponse.status;
-        this.pendingRequestQueueSize = storeResponse.pendingRequestQueueSize;
-        this.requestPayloadLength = storeResponse.requestPayloadLength;
-        this.responsePayloadLength = storeResponse.responsePayloadLength;
-        this.requestTimeline = storeResponse.requestTimeline;
-        this.channelAcquisitionTimeline = storeResponse.channelAcquisitionTimeline;
-        this.rntbdChannelTaskQueueSize = storeResponse.rntbdChannelTaskQueueSize;
-        this.rntbdEndpointStatistics = storeResponse.rntbdEndpointStatistics;
-        this.rntbdRequestLength = storeResponse.rntbdRequestLength;
-        this.rntbdResponseLength = storeResponse.rntbdResponseLength;
     }
 }

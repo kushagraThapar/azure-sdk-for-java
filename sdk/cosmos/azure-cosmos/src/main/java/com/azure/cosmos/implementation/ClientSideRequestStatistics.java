@@ -46,8 +46,9 @@ public class ClientSideRequestStatistics {
     private RequestTimeline gatewayRequestTimeline;
     private MetadataDiagnosticsContext metadataDiagnosticsContext;
     private SerializationDiagnosticsContext serializationDiagnosticsContext;
+    private GlobalEndpointManager globalEndpointManager;
 
-    public ClientSideRequestStatistics(DiagnosticsClientContext diagnosticsClientContext) {
+    public ClientSideRequestStatistics(DiagnosticsClientContext diagnosticsClientContext, GlobalEndpointManager globalEndpointManager) {
         this.diagnosticsClientContext = diagnosticsClientContext;
         this.requestStartTimeUTC = Instant.now();
         this.requestEndTimeUTC = Instant.now();
@@ -61,6 +62,7 @@ public class ClientSideRequestStatistics {
         this.metadataDiagnosticsContext = new MetadataDiagnosticsContext();
         this.serializationDiagnosticsContext = new SerializationDiagnosticsContext();
         this.retryContext = new RetryContext();
+        this.globalEndpointManager = globalEndpointManager;
     }
 
     public Duration getDuration() {
@@ -75,14 +77,13 @@ public class ClientSideRequestStatistics {
         return diagnosticsClientContext;
     }
 
-    public void recordResponse(RxDocumentServiceRequest request, StoreResult storeResult, GlobalEndpointManager globalEndpointManager) {
+    public void recordResponse(RxDocumentServiceRequest request, StoreResult storeResult) {
         Objects.requireNonNull(request, "request is required and cannot be null.");
         Instant responseTime = Instant.now();
 
         StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics();
         storeResponseStatistics.requestResponseTimeUTC = responseTime;
-//        storeResponseStatistics.storeResult = storeResult;
-        storeResponseStatistics.storeResult = StoreResult.createSerializableStoreResult(storeResult);
+        storeResponseStatistics.storeResult = storeResult;
         storeResponseStatistics.requestOperationType = request.getOperationType();
         storeResponseStatistics.requestResourceType = request.getResourceType();
         activityId = request.getActivityId().toString();
@@ -101,7 +102,7 @@ public class ClientSideRequestStatistics {
             }
 
             if (locationEndPoint != null) {
-                this.regionsContacted.add(globalEndpointManager.getRegionName(locationEndPoint, request.getOperationType()));
+                this.regionsContacted.add(this.globalEndpointManager.getRegionName(locationEndPoint, request.getOperationType()));
                 this.locationEndpointsContacted.add(locationEndPoint);
             }
 
@@ -116,7 +117,7 @@ public class ClientSideRequestStatistics {
 
     public void recordGatewayResponse(
         RxDocumentServiceRequest rxDocumentServiceRequest, StoreResponse storeResponse,
-        CosmosException exception, GlobalEndpointManager globalEndpointManager) {
+        CosmosException exception) {
         Instant responseTime = Instant.now();
 
         synchronized (this) {
@@ -131,7 +132,7 @@ public class ClientSideRequestStatistics {
             this.recordRetryContextEndTime();
 
             if (locationEndPoint != null) {
-                this.regionsContacted.add(globalEndpointManager.getRegionName(locationEndPoint, rxDocumentServiceRequest.getOperationType()));
+                this.regionsContacted.add(this.globalEndpointManager.getRegionName(locationEndPoint, rxDocumentServiceRequest.getOperationType()));
                 this.locationEndpointsContacted.add(locationEndPoint);
             }
 
