@@ -222,6 +222,11 @@ public class DocumentQueryExecutionContextFactory {
                 logger.warn("Clearing query plan cache as it has reached the maximum size : {}", queryPlanCache.size());
                 queryPlanCache.clear();
             }
+
+            if (queryPlanCache.size() > Constants.QUERYPLAN_CACHE_SIZE) {
+                logger.warn("Query plan size: {} is greater than maximum allowed size : {}", queryPlanCache.size(), Constants.QUERYPLAN_CACHE_SIZE);
+                queryPlanCache.clear();
+            }
             queryPlanCache.put(query.getQueryText(), partitionedQueryExecutionInfo);
         }
     }
