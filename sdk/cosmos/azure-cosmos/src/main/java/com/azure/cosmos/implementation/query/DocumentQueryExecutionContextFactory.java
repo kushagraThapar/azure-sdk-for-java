@@ -219,13 +219,15 @@ public class DocumentQueryExecutionContextFactory {
         QueryInfo queryInfo = partitionedQueryExecutionInfo.getQueryInfo();
         if (canCacheQuery(queryInfo) && !queryPlanCache.containsKey(query.getQueryText())) {
             if (queryPlanCache.size() == Constants.QUERYPLAN_CACHE_SIZE) {
-                logger.warn("Clearing query plan cache as it has reached the maximum size : {}", queryPlanCache.size());
+                logger.info("Clearing query plan cache as it has reached the maximum size : {}", queryPlanCache.size());
                 queryPlanCache.clear();
             }
 
             if (queryPlanCache.size() > Constants.QUERYPLAN_CACHE_SIZE) {
-                logger.warn("Query plan size: {} is greater than maximum allowed size : {}", queryPlanCache.size(), Constants.QUERYPLAN_CACHE_SIZE);
+                logger.info("Query plan cache size: {} is greater than maximum allowed size : {}", queryPlanCache.size(), Constants.QUERYPLAN_CACHE_SIZE);
                 queryPlanCache.clear();
+            } else {
+                logger.info("Query plan cache size: {}", queryPlanCache.size());
             }
             queryPlanCache.put(query.getQueryText(), partitionedQueryExecutionInfo);
         }
