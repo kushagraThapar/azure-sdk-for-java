@@ -422,6 +422,24 @@ public class ParallelDocumentQueryExecutionContext<T>
     @Override
     public Flux<FeedResponse<T>> drainAsync(
             int maxPageSize) {
+
+        int fluxConcurrency = fluxSequentialMergeConcurrency(cosmosQueryRequestOptions, this.documentProducers.size());
+        int fluxPrefetch = fluxSequentialMergePrefetch(cosmosQueryRequestOptions, this.documentProducers.size(),
+            maxPageSize, fluxConcurrency);
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("ParallelQuery: flux mergeSequential" +
+                    " concurrency {}, prefetch {}, Context: {}",
+                fluxConcurrency,
+                fluxPrefetch,
+                this.getOperationContextTextProvider().get());
+        }
+        logger.info("ParallelQuery: flux mergeSequential" +
+                " concurrency {}, prefetch {}, Context: {}",
+            fluxConcurrency,
+            fluxPrefetch,
+            this.getOperationContextTextProvider().get());
+
         List<Flux<DocumentProducer<T>.DocumentProducerFeedResponse>> obs = this.documentProducers
                 // Get the stream.
                 .stream()
@@ -432,23 +450,12 @@ public class ParallelDocumentQueryExecutionContext<T>
                 // Merge results from all partitions.
                 .collect(Collectors.toList());
 
-        int fluxConcurrency = fluxSequentialMergeConcurrency(cosmosQueryRequestOptions, obs.size());
-        int fluxPrefetch = fluxSequentialMergePrefetch(cosmosQueryRequestOptions, obs.size(),
-            maxPageSize, fluxConcurrency);
-
-        if (logger.isDebugEnabled()) {
-            logger.debug("ParallelQuery: flux mergeSequential" +
-                    " concurrency {}, prefetch {}, Context: {}",
-                fluxConcurrency,
-                fluxPrefetch,
-                this.getOperationContextTextProvider().get());
-        }
-        return Flux.mergeSequential(obs, fluxConcurrency, fluxPrefetch)
+        return Flux.mergeSequential(obs, fluxConcurrency, fluxPrefetch).log()
             .transformDeferred(new EmptyPagesFilterTransformer<>(
                 new RequestChargeTracker(),
                 this.cosmosQueryRequestOptions,
                 correlatedActivityId,
-                this.getOperationContextTextProvider()));
+                this.getOperationContextTextProvider())).log();
     }
 
     @Override

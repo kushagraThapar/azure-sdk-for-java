@@ -234,6 +234,8 @@ public class CosmosQueryRequestOptions {
      * Gets the number of concurrent operations run client side during parallel
      * query execution.
      *
+     * Default is 0
+     *
      * @return number of concurrent operations run client side during parallel query
      * execution.
      */
@@ -244,6 +246,8 @@ public class CosmosQueryRequestOptions {
     /**
      * Sets the number of concurrent operations run client side during parallel
      * query execution.
+     *
+     * Default is 0
      *
      * @param maxDegreeOfParallelism number of concurrent operations.
      * @return the CosmosQueryRequestOptions.

@@ -4,12 +4,12 @@ package com.azure.cosmos.implementation.query;
 
 import com.azure.cosmos.implementation.ImplementationBridgeHelpers;
 import com.azure.cosmos.implementation.RxDocumentClientImpl;
+import com.azure.cosmos.implementation.RxDocumentServiceRequest;
 import com.azure.cosmos.implementation.changefeed.common.ChangeFeedState;
 import com.azure.cosmos.implementation.spark.OperationContextAndListenerTuple;
-import com.azure.cosmos.models.ModelBridgeInternal;
 import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.FeedResponse;
-import com.azure.cosmos.implementation.RxDocumentServiceRequest;
+import com.azure.cosmos.models.ModelBridgeInternal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -105,9 +105,10 @@ public class Paginator {
                 (tFetcher, sink) -> {
                     if (tFetcher.shouldFetchMore()) {
                         Mono<FeedResponse<T>> nextPage = tFetcher.nextPage();
+                        logger.info("Generating next page: {}", tFetcher.getOperationContextText());
                         sink.next(nextPage.flux());
                     } else {
-                        logger.debug("No more results, Context: {}", tFetcher.getOperationContextText());
+                        logger.info("No more results, Context: {}", tFetcher.getOperationContextText());
                         sink.complete();
                     }
                     return tFetcher;
@@ -151,6 +152,8 @@ public class Paginator {
             Math.min(top, maxPageSize) :
             Math.max(1, maxPageSize);
         int prefetch = Math.max(1, maxBufferedItemCount / effectivePageSize);
-        return Math.min(prefetch, Queues.XS_BUFFER_SIZE);
+        int min = Math.min(prefetch, Queues.XS_BUFFER_SIZE);
+        logger.info("Prefetch count is : {}", min);
+        return min;
     }
 }

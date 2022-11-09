@@ -617,7 +617,10 @@ public class CosmosAsyncContainer {
 
                 return getDatabase().getDocClientWrapper()
                              .queryDocuments(CosmosAsyncContainer.this.getLink(), sqlQuerySpec, options, classType)
-                             .map(response -> prepareFeedResponse(response, false));
+                             .map(response ->  {
+                                 logger.info("Feed Response is : {}", response);
+                                 return prepareFeedResponse(response, false);
+                             });
         });
 
         return pagedFluxOptionsFluxFunction;

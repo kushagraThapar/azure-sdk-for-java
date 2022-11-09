@@ -39,13 +39,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class CosmosPagedIterableTest extends TestSuiteBase {
     private static final Logger LOGGER = LoggerFactory.getLogger(CosmosPagedIterableTest.class);
-    private static final int NUM_OF_ITEMS = 10;
+    private static final int NUM_OF_ITEMS = 100;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private CosmosClient cosmosClient;
     private CosmosContainer cosmosContainer;
 
-    @Factory(dataProvider = "clientBuildersWithDirectSession")
+    @Factory(dataProvider = "clientBuildersWithGateway")
     public CosmosPagedIterableTest(CosmosClientBuilder clientBuilder) {
         super(clientBuilder);
     }
@@ -54,7 +54,7 @@ public class CosmosPagedIterableTest extends TestSuiteBase {
     public void before_CosmosPagedIterableTest() throws JsonProcessingException {
         assertThat(this.cosmosClient).isNull();
         this.cosmosClient = getClientBuilder().buildClient();
-        CosmosAsyncContainer asyncContainer = getSharedMultiPartitionCosmosContainer(this.cosmosClient.asyncClient());
+        CosmosAsyncContainer asyncContainer = getSharedSinglePartitionCosmosContainer(this.cosmosClient.asyncClient());
         cosmosContainer =
             cosmosClient.getDatabase(asyncContainer.getDatabase().getId()).getContainer(asyncContainer.getId());
         createItems(NUM_OF_ITEMS);
@@ -111,6 +111,43 @@ public class CosmosPagedIterableTest extends TestSuiteBase {
         cosmosPagedIterable.forEach(objectNode -> { });
 
         assertThat(handleCount.get() >= 1).isTrue();
+    }
+
+    @Test(groups = { "simple" })
+    public void queryItemsWithCosmosPagedIterable() throws Exception {
+
+        CosmosQueryRequestOptions cosmosQueryRequestOptions = new CosmosQueryRequestOptions();
+        cosmosQueryRequestOptions.setMaxBufferedItemCount(10);
+        CosmosPagedIterable<ObjectNode> cosmosPagedIterable = cosmosContainer.queryItems("select * from c",
+            cosmosQueryRequestOptions, ObjectNode.class);
+
+        Iterable<FeedResponse<ObjectNode>> feedResponses = cosmosPagedIterable.iterableByPage(10);
+        //  Just creating iterator drains all the results!
+        Iterator<FeedResponse<ObjectNode>> iterator = feedResponses.iterator();
+        if (iterator.hasNext()) {
+            FeedResponse<ObjectNode> next = iterator.next();
+            logger.info("Next is : {}", next.getResults().size());
+        }
+        Thread.sleep(5 * 1000);
+    }
+
+
+    @Test(groups = { "simple" })
+    public void queryItemsWithCosmosPagedFlux() throws Exception {
+
+        CosmosQueryRequestOptions cosmosQueryRequestOptions = new CosmosQueryRequestOptions();
+        cosmosQueryRequestOptions.setMaxBufferedItemCount(10);
+        CosmosAsyncContainer cosmosAsyncContainer = CosmosBridgeInternal.getCosmosAsyncContainer(cosmosContainer);
+        CosmosPagedFlux<ObjectNode> cosmosPagedFlux = cosmosAsyncContainer.queryItems("select * from c",
+            cosmosQueryRequestOptions, ObjectNode.class);
+
+        CosmosPagedIterable<ObjectNode> cosmosPagedIterable = new CosmosPagedIterable<>(cosmosPagedFlux, 10, 1);
+        Iterator<FeedResponse<ObjectNode>> iterator = cosmosPagedIterable.iterableByPage().iterator();
+        if (iterator.hasNext()) {
+            FeedResponse<ObjectNode> next = iterator.next();
+            logger.info("Next is : {}", next.getResults().size());
+        }
+        Thread.sleep(5 * 1000);
     }
 
     @Test(groups = { "unit" })
