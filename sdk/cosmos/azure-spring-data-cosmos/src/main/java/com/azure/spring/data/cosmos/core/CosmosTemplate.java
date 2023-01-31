@@ -209,6 +209,7 @@ public class CosmosTemplate implements CosmosOperations, ApplicationContextAware
         Assert.notNull(objectToSave, "objectToSave should not be null");
 
         @SuppressWarnings("unchecked") final Class<T> domainType = (Class<T>) objectToSave.getClass();
+        containerName = getContainerName(domainType);
 
         markAuditedIfConfigured(objectToSave);
         generateIdIfNullAndAutoGenerationEnabled(objectToSave, domainType);
@@ -423,6 +424,7 @@ public class CosmosTemplate implements CosmosOperations, ApplicationContextAware
             containerName);
 
         @SuppressWarnings("unchecked") final Class<T> domainType = (Class<T>) object.getClass();
+        containerName = getContainerName(domainType);
 
         final CosmosItemRequestOptions options = new CosmosItemRequestOptions();
         applyVersioning(domainType, originalItem, options);
@@ -538,8 +540,19 @@ public class CosmosTemplate implements CosmosOperations, ApplicationContextAware
 
     @Override
     public String getContainerName(Class<?> domainType) {
+        if (this.cosmosFactory.getContainerName() != null) {
+            return this.cosmosFactory.getContainerName();
+        }
         Assert.notNull(domainType, "domainType should not be null");
         return CosmosEntityInformation.getInstance(domainType).getContainerName();
+    }
+
+    public String getContainerName(CosmosEntityInformation<?, ?> information) {
+        if (this.cosmosFactory.getContainerName() != null) {
+            return this.cosmosFactory.getContainerName();
+        }
+        Assert.notNull(information, "information should not be null");
+        return information.getContainerName();
     }
 
     @Override
@@ -555,7 +568,7 @@ public class CosmosTemplate implements CosmosOperations, ApplicationContextAware
                     cosmosDatabaseResponse.getDiagnostics(), null);
 
                 final CosmosContainerProperties cosmosContainerProperties =
-                    new CosmosContainerProperties(information.getContainerName(), information.getPartitionKeyPath());
+                    new CosmosContainerProperties(getContainerName(information), information.getPartitionKeyPath());
                 cosmosContainerProperties.setDefaultTimeToLiveInSeconds(information.getTimeToLive());
                 cosmosContainerProperties.setIndexingPolicy(information.getIndexingPolicy());
                 final UniqueKeyPolicy uniqueKeyPolicy = information.getUniqueKeyPolicy();
