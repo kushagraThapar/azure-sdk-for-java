@@ -92,6 +92,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -148,7 +149,7 @@ public class RxDocumentClientImpl implements AsyncDocumentClient, IAuthorization
     private RxPartitionKeyRangeCache partitionKeyRangeCache;
     private Map<String, List<PartitionKeyAndResourceTokenPair>> resourceTokensMap;
     private final boolean contentResponseOnWriteEnabled;
-    private Map<String, PartitionedQueryExecutionInfo> queryPlanCache;
+    private final AtomicReference<Map<String, PartitionedQueryExecutionInfo>> queryPlanCacheReference;
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final int clientId;
@@ -444,7 +445,7 @@ public class RxDocumentClientImpl implements AsyncDocumentClient, IAuthorization
             this.retryPolicy = new RetryPolicy(this, this.globalEndpointManager, this.connectionPolicy);
             this.resetSessionTokenRetryPolicy = retryPolicy;
             CpuMemoryMonitor.register(this);
-            this.queryPlanCache = new ConcurrentHashMap<>();
+            this.queryPlanCacheReference = new AtomicReference<>(new ConcurrentHashMap<>(Constants.QUERYPLAN_CACHE_SIZE));
             this.apiType = apiType;
             this.clientTelemetryConfig = clientTelemetryConfig;
         } catch (RuntimeException e) {
@@ -926,7 +927,7 @@ public class RxDocumentClientImpl implements AsyncDocumentClient, IAuthorization
             DocumentQueryExecutionContextFactory
                 .createDocumentQueryExecutionContextAsync(this, queryClient, resourceTypeEnum, klass, sqlQuery,
                                                           options, resourceLink, false, activityId,
-                                                          Configs.isQueryPlanCachingEnabled(), queryPlanCache);
+                                                          Configs.isQueryPlanCachingEnabled(), queryPlanCacheReference);
 
         AtomicBoolean isFirstResponse = new AtomicBoolean(true);
         return executionContext.flatMap(iDocumentQueryExecutionContext -> {
@@ -2612,7 +2613,7 @@ public class RxDocumentClientImpl implements AsyncDocumentClient, IAuthorization
 
     @Override
     public Map<String, PartitionedQueryExecutionInfo> getQueryPlanCache() {
-        return queryPlanCache;
+        return queryPlanCacheReference.get();
     }
 
     @Override

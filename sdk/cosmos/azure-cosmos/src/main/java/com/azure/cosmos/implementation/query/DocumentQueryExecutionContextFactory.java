@@ -35,6 +35,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -69,7 +71,7 @@ public class DocumentQueryExecutionContextFactory {
         String resourceLink,
         DocumentCollection collection,
         DefaultDocumentQueryExecutionContext<T> queryExecutionContext, boolean queryPlanCachingEnabled,
-        Map<String, PartitionedQueryExecutionInfo> queryPlanCache) {
+        AtomicReference<Map<String, PartitionedQueryExecutionInfo>> queryPlanCacheReference) {
 
         // The partitionKeyRangeIdInternal is no more a public API on
         // FeedOptions, but have the below condition
@@ -109,9 +111,9 @@ public class DocumentQueryExecutionContextFactory {
 
         if (queryPlanCachingEnabled &&
                 isScopedToSinglePartition(cosmosQueryRequestOptions) &&
-                queryPlanCache.containsKey(query.getQueryText())) {
+                queryPlanCacheReference.get().containsKey(query.getQueryText())) {
             Instant endTime = Instant.now(); // endTime for query plan diagnostics
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = queryPlanCache.get(query.getQueryText());
+            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo = queryPlanCacheReference.get().get(query.getQueryText());
             if (partitionedQueryExecutionInfo != null) {
                 logger.debug("Skipping query plan round trip by using the cached plan");
                 return getTargetRangesFromQueryPlan(cosmosQueryRequestOptions, collection, queryExecutionContext,
@@ -133,7 +135,7 @@ public class DocumentQueryExecutionContextFactory {
                 Instant endTime = Instant.now();
 
                 if (queryPlanCachingEnabled && isScopedToSinglePartition(cosmosQueryRequestOptions)) {
-                    tryCacheQueryPlan(query, partitionedQueryExecutionInfo, queryPlanCache);
+                    tryCacheQueryPlan(query, partitionedQueryExecutionInfo, queryPlanCacheReference);
                 }
 
                 return getTargetRangesFromQueryPlan(cosmosQueryRequestOptions, collection, queryExecutionContext,
@@ -215,13 +217,14 @@ public class DocumentQueryExecutionContextFactory {
     synchronized private static void tryCacheQueryPlan(
         SqlQuerySpec query,
         PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-        Map<String, PartitionedQueryExecutionInfo> queryPlanCache) {
-        if (canCacheQuery(partitionedQueryExecutionInfo.getQueryInfo()) && !queryPlanCache.containsKey(query.getQueryText())) {
-            if (queryPlanCache.size() >= Constants.QUERYPLAN_CACHE_SIZE) {
-                logger.warn("Clearing query plan cache as it has reached the maximum size : {}", queryPlanCache.size());
-                queryPlanCache.clear();
+        AtomicReference<Map<String, PartitionedQueryExecutionInfo>> queryPlanCacheReference) {
+        if (canCacheQuery(partitionedQueryExecutionInfo.getQueryInfo())
+            && !queryPlanCacheReference.get().containsKey(query.getQueryText())) {
+            if (queryPlanCacheReference.get().size() >= Constants.QUERYPLAN_CACHE_SIZE) {
+                logger.warn("Clearing query plan cache as it has reached the maximum size : {}", queryPlanCacheReference.get().size());
+                queryPlanCacheReference.set(new ConcurrentHashMap<>(Constants.QUERYPLAN_CACHE_SIZE));
             }
-            queryPlanCache.put(query.getQueryText(), partitionedQueryExecutionInfo);
+            queryPlanCacheReference.get().put(query.getQueryText(), partitionedQueryExecutionInfo);
         }
     }
 
@@ -254,7 +257,7 @@ public class DocumentQueryExecutionContextFactory {
         boolean isContinuationExpected,
         UUID correlatedActivityId,
         boolean queryPlanCachingEnabled,
-        Map<String, PartitionedQueryExecutionInfo> queryPlanCache) {
+        AtomicReference<Map<String, PartitionedQueryExecutionInfo>> queryPlanCacheReference) {
 
         // return proxy
         Flux<Utils.ValueHolder<DocumentCollection>> collectionObs = Flux.just(new Utils.ValueHolder<>(null));
@@ -287,7 +290,7 @@ public class DocumentQueryExecutionContextFactory {
                                                   collectionValueHolder.v,
                                                   queryExecutionContext,
                                                   queryPlanCachingEnabled,
-                                                  queryPlanCache);
+                                                  queryPlanCacheReference);
 
             return queryPlanTask
                 .flatMap(queryPlan -> createSpecializedDocumentQueryExecutionContextAsync(diagnosticsClientContext,
