@@ -33,6 +33,7 @@ public class IncrementalCFPTest {
     private CosmosAsyncDatabase cosmosAsyncDatabase;
     private CosmosAsyncContainer cosmosAsyncFeedContainer;
     private CosmosAsyncContainer cosmosAsyncLeaseContainer;
+    private CosmosAsyncContainer cosmosAsyncContainer;
     public final Scheduler COSMOS_PARALLEL = Schedulers.newParallel(
         "cosmos-parallel",
         Schedulers.DEFAULT_POOL_SIZE,
@@ -60,22 +61,33 @@ public class IncrementalCFPTest {
         });
         setup();
         //        ingestData();
-//        readData();
+        //        readData();
         ChangeFeedProcessorBuilder changeFeedProcessorBuilder = new ChangeFeedProcessorBuilder();
         ChangeFeedProcessor changeFeedProcessor = changeFeedProcessorBuilder.hostName("testHost")
                                                                             .feedContainer(cosmosAsyncFeedContainer)
                                                                             .leaseContainer(cosmosAsyncLeaseContainer)
                                                                             .options(new ChangeFeedProcessorOptions()
                                                                                 .setStartFromBeginning(true)
+                                                                                .setFeedPollDelay(Duration.ofSeconds(5))
                                                                                 .setMaxItemCount(10))
-                                                                            .handleChanges(new Consumer<List<JsonNode>>() {
-                                                                                @Override
-                                                                                public void accept(List<JsonNode> jsonNodes) {
-                                                                                    logger.info("Received {} changes", jsonNodes.size());
-                                                                                }
-                                                                            }).buildChangeFeedProcessor();
+                                                                            .handleChanges(handleChanges()).buildChangeFeedProcessor();
         changeFeedProcessor.start().subscribe();
-        Thread.sleep(1200 * 1000);
+        Thread.sleep(2400 * 1000);
+    }
+
+    private Consumer<List<JsonNode>> handleChanges() {
+        return jsonNodes -> {
+            //logger.info("Received {} changes", jsonNodes.size());
+            jsonNodes.forEach(jsonNode -> {
+                //  logger.info("Received change {}", jsonNode);
+                cosmosAsyncContainer.upsertItem(jsonNode, new CosmosItemRequestOptions())
+                                    .onErrorResume(throwable -> {
+                                        //logger.error("Error occurred while upserting item");
+                                        return Mono.empty();
+                                    })
+                                    .subscribeOn(Schedulers.boundedElastic()).subscribe();
+            });
+        };
     }
 
     public void setup() {
@@ -90,8 +102,10 @@ public class IncrementalCFPTest {
         cosmosAsyncDatabase = cosmosAsyncClient.getDatabase("testdb");
         cosmosAsyncDatabase.createContainerIfNotExists("testfeedcontainer", "/pk").block();
         cosmosAsyncDatabase.createContainerIfNotExists("testleasecontainer", "/id").block();
+        cosmosAsyncDatabase.createContainerIfNotExists("testcontainer", "/pk").block();
         cosmosAsyncFeedContainer = cosmosAsyncDatabase.getContainer("testfeedcontainer");
         cosmosAsyncLeaseContainer = cosmosAsyncDatabase.getContainer("testleasecontainer");
+        cosmosAsyncContainer = cosmosAsyncDatabase.getContainer("testcontainer");
     }
 
     public void ingestData() throws InterruptedException {
@@ -105,7 +119,8 @@ public class IncrementalCFPTest {
         cosmosAsyncFeedContainer.queryItems("SELECT * FROM c", Item.class)
                                 .byPage(10)
                                 .flatMap(cosmosItemPropertiesFeedResponse -> {
-                                    logger.info("Received {} items", cosmosItemPropertiesFeedResponse.getResults().size());
+                                    logger.info("Received {} items",
+                                        cosmosItemPropertiesFeedResponse.getResults().size());
                                     return Mono.empty();
                                 }).blockLast();
     }
@@ -118,12 +133,12 @@ public class IncrementalCFPTest {
                 String pk = "pk-" + pkId;
                 String field = UUID.randomUUID().toString();
                 cosmosAsyncFeedContainer.createItem(new Item(id, pk, field),
-                    new PartitionKey(pk),
-                    new CosmosItemRequestOptions())
-                    .onErrorResume(throwable -> {
-                        logger.error("Error occurred while creating item");
-                        return Mono.empty();
-                    }).subscribe();
+                                            new PartitionKey(pk),
+                                            new CosmosItemRequestOptions())
+                                        .onErrorResume(throwable -> {
+                                            logger.error("Error occurred while creating item");
+                                            return Mono.empty();
+                                        }).subscribe();
             }
         };
     }
@@ -133,7 +148,8 @@ public class IncrementalCFPTest {
         String pk;
         String field;
 
-        public Item() {}
+        public Item() {
+        }
 
         public Item(String id, String pk, String field) {
             this.id = id;

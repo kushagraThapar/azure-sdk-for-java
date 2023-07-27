@@ -410,7 +410,7 @@ public class RxGatewayStoreModel implements RxStoreModel {
             CosmosException dce;
             if (!(exception instanceof CosmosException)) {
                 // wrap in CosmosException
-                logger.error("Network failure", exception);
+                //logger.error("Network failure: {}", exception.getMessage());
 
                 int statusCode = 0;
                 if (WebExceptionUtility.isNetworkFailure(exception)) {

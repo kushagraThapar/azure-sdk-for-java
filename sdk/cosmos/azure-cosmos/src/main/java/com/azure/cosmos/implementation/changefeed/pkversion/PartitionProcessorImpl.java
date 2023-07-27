@@ -165,7 +165,7 @@ class PartitionProcessorImpl implements PartitionProcessor {
 
                     CosmosException clientException = (CosmosException) throwable;
                     logger.warn("CosmosException: Partition {} from thread {} with owner {}",
-                        this.lease.getLeaseToken(), Thread.currentThread().getId(), this.lease.getOwner(), clientException);
+                        this.lease.getLeaseToken(), Thread.currentThread().getId(), this.lease.getOwner());
                     StatusCodeErrorType docDbError = ExceptionClassifier.classifyClientException(clientException);
 
                     switch (docDbError) {

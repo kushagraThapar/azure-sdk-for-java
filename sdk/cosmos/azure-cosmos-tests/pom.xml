@@ -93,6 +93,7 @@ Licensed under the MIT License.
       --add-opens com.azure.cosmos/com.azure.cosmos.implementation.changefeed.epkversion=ALL-UNNAMED
       --add-opens com.azure.cosmos/com.azure.cosmos.implementation.faultinjection=ALL-UNNAMED
     </javaModulesSurefireArgLine>
+    <surefireXmx>1024m</surefireXmx>
   </properties>
 
   <dependencies>

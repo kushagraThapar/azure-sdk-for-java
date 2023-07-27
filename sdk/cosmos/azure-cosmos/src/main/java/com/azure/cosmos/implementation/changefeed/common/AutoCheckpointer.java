@@ -65,7 +65,7 @@ public class AutoCheckpointer<T> implements ChangeFeedObserver<T> {
         if (this.isCheckpointNeeded()) {
             return context.checkpoint()
                 .doOnError(throwable -> {
-                    logger.warn("Checkpoint failed; this worker will be killed", throwable);
+                    logger.error("Checkpoint failed; this worker will be killed");
                 })
                 .doOnSuccess((Void) -> {
                     this.processedDocCount.set(0);
