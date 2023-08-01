@@ -119,9 +119,8 @@ public class Uri {
                     }
                     break;
                 case Connected:
-                    if (previousStatus != HealthStatus.Unhealthy
-                        || (previousStatus == HealthStatus.Unhealthy &&
-                            Instant.now().compareTo(this.lastTransitionToUnhealthyTimestamp.plusMillis(DEFAULT_NON_HEALTHY_RESET_TIME_IN_MILLISECONDS)) > 0)) {
+                    if (previousStatus != HealthStatus.Unhealthy ||
+                        Instant.now().compareTo(this.lastTransitionToUnhealthyTimestamp.plusMillis(DEFAULT_NON_HEALTHY_RESET_TIME_IN_MILLISECONDS)) > 0) {
                         newStatus = status;
                     }
                     break;

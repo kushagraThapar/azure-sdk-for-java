@@ -7,10 +7,13 @@ import com.azure.cosmos.CosmosAsyncContainer;
 import com.azure.cosmos.CosmosAsyncDatabase;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.implementation.TestConfigurations;
+import com.azure.cosmos.implementation.Utils;
 import com.azure.cosmos.models.ChangeFeedProcessorOptions;
 import com.azure.cosmos.models.CosmosItemRequestOptions;
+import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.PartitionKey;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
@@ -23,12 +26,14 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 public class IncrementalCFPTest {
 
     private static final Logger logger = LoggerFactory.getLogger(IncrementalCFPTest.class);
+    private static final ObjectMapper objectMapper = Utils.getSimpleObjectMapper();
     private CosmosAsyncClient cosmosAsyncClient;
     private CosmosAsyncDatabase cosmosAsyncDatabase;
     private CosmosAsyncContainer cosmosAsyncFeedContainer;
@@ -38,23 +43,24 @@ public class IncrementalCFPTest {
         "cosmos-parallel",
         Schedulers.DEFAULT_POOL_SIZE,
         true);
+    private static final AtomicInteger counter = new AtomicInteger(0);
 
 
     @Test
     public void testCFP() throws InterruptedException {
 
         Schedulers.onHandleError((thread, throwable) -> {
-            logger.info("Error occurred in thread : {}", thread, throwable);
+            logger.error("Error occurred in thread : {}", thread, throwable);
             //  Take appropriate action here on Errors which are not recoverable
             if (throwable instanceof Error) {
-                logger.info("It is a java.lang.Error caught in Schedulers Hook, can't do much");
+                logger.error("It is a java.lang.Error caught in Schedulers Hook, can't do much");
                 System.exit(99);
             }
         });
 
         Hooks.onNextError((throwable, o) -> {
             if (throwable instanceof Error) {
-                logger.info("It is a java.lang.Error caught in onNextError, can't do much");
+                logger.error("It is a java.lang.Error caught in onNextError, can't do much");
                 System.exit(99);
             }
             return throwable;
@@ -77,16 +83,25 @@ public class IncrementalCFPTest {
 
     private Consumer<List<JsonNode>> handleChanges() {
         return jsonNodes -> {
-            //logger.info("Received {} changes", jsonNodes.size());
+            counter.addAndGet(jsonNodes.size());
+            //logger.error("Received {} changes", jsonNodes.size());
             jsonNodes.forEach(jsonNode -> {
                 //  logger.info("Received change {}", jsonNode);
-                cosmosAsyncContainer.upsertItem(jsonNode, new CosmosItemRequestOptions())
+                Item item = objectMapper.convertValue(jsonNode, Item.class);
+                cosmosAsyncContainer.readItem(item.id, new PartitionKey(item.pk), Item.class).publishOn(Schedulers.boundedElastic())
+                                    .flatMap(readItem -> {
+                                        //logger.info("Upserting item : {}", readItem);
+                                        return cosmosAsyncContainer.upsertItem(readItem);
+                                    })
                                     .onErrorResume(throwable -> {
                                         //logger.error("Error occurred while upserting item");
                                         return Mono.empty();
                                     })
-                                    .subscribeOn(Schedulers.boundedElastic()).subscribe();
+                                    .subscribe();
             });
+            if (counter.get() % 1000 == 0) {
+                logger.error("Received {} changes", counter.get());
+            }
         };
     }
 

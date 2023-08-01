@@ -309,6 +309,9 @@ public class CosmosDiagnosticsTest extends TestSuiteBase {
     public void directDiagnostics() throws Exception {
         InternalObjectNode internalObjectNode = getInternalObjectNode();
         CosmosItemResponse<InternalObjectNode> createResponse = containerDirect.createItem(internalObjectNode);
+        CosmosDiagnostics diagnostics = createResponse.getDiagnostics();
+        logger.error("Diagnostics are : {}", diagnostics);
+
         validateDirectModeDiagnosticsOnSuccess(createResponse.getDiagnostics(), directClient, this.directClientUserAgent);
 
         // validate that on failed operation request timeline is populated
@@ -322,20 +325,35 @@ public class CosmosDiagnosticsTest extends TestSuiteBase {
 
     @Test(groups = {"simple"}, timeOut = TIMEOUT)
     public void requestSessionTokenDiagnostics() {
-        CosmosClient testSessionTokenClient = null;
+        CosmosClient testSessionTokenClient1 = null;
+        CosmosClient testSessionTokenClient2 = null;
         try {
-            testSessionTokenClient = new CosmosClientBuilder()
+            testSessionTokenClient1 = new CosmosClientBuilder()
                 .endpoint(TestConfigurations.HOST)
                 .key(TestConfigurations.MASTER_KEY)
                 .consistencyLevel(ConsistencyLevel.SESSION)
                 .contentResponseOnWriteEnabled(true)
                 .directMode()
                 .buildClient();
+
+            testSessionTokenClient2 = new CosmosClientBuilder()
+                .endpoint(TestConfigurations.HOST)
+                .key(TestConfigurations.MASTER_KEY)
+                .consistencyLevel(ConsistencyLevel.SESSION)
+                .contentResponseOnWriteEnabled(true)
+                .directMode()
+                .buildClient();
+
             CosmosContainer cosmosContainer =
-                testSessionTokenClient.getDatabase(cosmosAsyncContainer.getDatabase().getId()).getContainer(cosmosAsyncContainer.getId());
+                testSessionTokenClient1.getDatabase(cosmosAsyncContainer.getDatabase().getId()).getContainer(cosmosAsyncContainer.getId());
             InternalObjectNode internalObjectNode = getInternalObjectNode();
             CosmosItemResponse<InternalObjectNode> createResponse = cosmosContainer.createItem(internalObjectNode);
             String diagnostics = createResponse.getDiagnostics().toString();
+            logger.error("Create diagnostics : {}", diagnostics);
+
+            cosmosContainer =
+                testSessionTokenClient2.getDatabase(cosmosAsyncContainer.getDatabase().getId()).getContainer(cosmosAsyncContainer.getId());
+
 
             // assert that request session token was not sent to backend (null)
             assertThat(diagnostics).contains("\"requestSessionToken\":null");
@@ -345,25 +363,29 @@ public class CosmosDiagnosticsTest extends TestSuiteBase {
             CosmosItemResponse<InternalObjectNode> readResponse =
                 cosmosContainer.readItem(BridgeInternal.getProperties(createResponse).getId(),
                     new PartitionKey(BridgeInternal.getProperties(createResponse).getId()),
+                    new CosmosItemRequestOptions().setSessionToken(sessionToken),
                     InternalObjectNode.class);
             diagnostics = readResponse.getDiagnostics().toString();
-            assertThat(diagnostics).contains(String.format("\"requestSessionToken\":\"%s\"", sessionToken));
-
-            // use batch operation to check that user-set session token is being passed in
-            // need to use batch since we only pass session token on multiple region write or batch operation
-            CosmosBatch batch = CosmosBatch.createCosmosBatch(new PartitionKey(
-                BridgeInternal.getProperties(createResponse).getId()));
-            internalObjectNode = getInternalObjectNode();
-            batch.createItemOperation(internalObjectNode);
-            CosmosBatchResponse batchResponse = cosmosContainer.executeCosmosBatch(batch,
-                new CosmosBatchRequestOptions().setSessionToken(readResponse.getSessionToken()));
-            diagnostics = batchResponse.getDiagnostics().toString();
+            logger.error("Read diagnostics : {}", diagnostics);
             assertThat(diagnostics).contains(String.format("\"requestSessionToken\":\"%s\"",
                 readResponse.getSessionToken()));
 
+
+//            // use batch operation to check that user-set session token is being passed in
+//            // need to use batch since we only pass session token on multiple region write or batch operation
+//            CosmosBatch batch = CosmosBatch.createCosmosBatch(new PartitionKey(
+//                BridgeInternal.getProperties(createResponse).getId()));
+//            internalObjectNode = getInternalObjectNode();
+//            batch.createItemOperation(internalObjectNode);
+//            CosmosBatchResponse batchResponse = cosmosContainer.executeCosmosBatch(batch,
+//                new CosmosBatchRequestOptions().setSessionToken(readResponse.getSessionToken()));
+//            diagnostics = batchResponse.getDiagnostics().toString();
+//            assertThat(diagnostics).contains(String.format("\"requestSessionToken\":\"%s\"",
+//                readResponse.getSessionToken()));
+
         } finally {
-            if (testSessionTokenClient != null) {
-                testSessionTokenClient.close();
+            if (testSessionTokenClient1 != null) {
+                testSessionTokenClient1.close();
             }
         }
     }

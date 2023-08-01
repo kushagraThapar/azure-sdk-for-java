@@ -4,6 +4,8 @@
 package com.azure.cosmos.implementation;
 
 import com.azure.cosmos.implementation.apachecommons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,10 +21,14 @@ import static com.azure.cosmos.implementation.Utils.ValueHolder;
  */
 public class SessionTokenHelper {
 
+    private static final Logger logger = LoggerFactory.getLogger(SessionTokenHelper.class);
+
     public static void setOriginalSessionToken(RxDocumentServiceRequest request, String originalSessionToken) {
         if (request == null) {
             throw new IllegalArgumentException("request is null");
         }
+
+        logger.error("Setting original session token : {}", originalSessionToken);
 
         if (originalSessionToken == null) {
             request.getHeaders().remove(HttpConstants.HttpHeaders.SESSION_TOKEN);
@@ -38,6 +44,8 @@ public class SessionTokenHelper {
     public static void setPartitionLocalSessionToken(RxDocumentServiceRequest request, String partitionKeyRangeId, ISessionContainer sessionContainer) {
         String originalSessionToken = request.getHeaders().get(HttpConstants.HttpHeaders.SESSION_TOKEN);
 
+        logger.error("Setting original session token in partition local session token : {}", originalSessionToken);
+
         if (Strings.isNullOrEmpty(partitionKeyRangeId)) {
             // AddressCache/address resolution didn't produce partition key range id.
             // In this case it is a bug.
@@ -52,6 +60,9 @@ public class SessionTokenHelper {
             ISessionToken sessionToken = sessionContainer.resolvePartitionLocalSessionToken(request, partitionKeyRangeId);
             request.requestContext.sessionToken = sessionToken;
         }
+
+        logger.error("Request context session token : {}", request.requestContext.sessionToken);
+
 
         if (request.requestContext.sessionToken == null) {
             request.getHeaders().remove(HttpConstants.HttpHeaders.SESSION_TOKEN);
@@ -79,6 +90,7 @@ public class SessionTokenHelper {
         // Local session token is single <partitionkeyrangeid>:<lsn> pair.
         // Backend only cares about pair which relates to the range owned by the partition.
         String[] localTokens = StringUtils.split(globalSessionToken, ",");
+        logger.error("Global session token : {}", globalSessionToken);
         Set<String> partitionKeyRangeSet = new HashSet<>();
         partitionKeyRangeSet.add(partitionKeyRangeId);
 
@@ -162,8 +174,10 @@ public class SessionTokenHelper {
 
     public static void validateAndRemoveSessionToken(RxDocumentServiceRequest request) {
         String sessionToken = request.getHeaders().get(HttpConstants.HttpHeaders.SESSION_TOKEN);
+        logger.error("Removing session token : {}", sessionToken);
         if (!Strings.isNullOrEmpty(sessionToken)) {
             getLocalSessionToken(request, sessionToken, StringUtils.EMPTY);
+            logger.error("Removing session token : {}", sessionToken);
             request.getHeaders().remove(HttpConstants.HttpHeaders.SESSION_TOKEN);
         }
     }
