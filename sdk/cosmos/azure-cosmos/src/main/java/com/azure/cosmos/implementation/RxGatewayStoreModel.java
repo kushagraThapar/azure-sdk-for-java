@@ -651,6 +651,7 @@ public class RxGatewayStoreModel implements RxStoreModel {
         // Master resource operations don't require session token.
         if (isMasterOperation(request.getResourceType(), request.getOperationType())) {
             if (!Strings.isNullOrEmpty(request.getHeaders().get(HttpConstants.HttpHeaders.SESSION_TOKEN))) {
+                logger.info("Removing session token in applySessionToken1");
                 request.getHeaders().remove(HttpConstants.HttpHeaders.SESSION_TOKEN);
             }
             return Mono.empty();
@@ -662,6 +663,7 @@ public class RxGatewayStoreModel implements RxStoreModel {
         if (!Strings.isNullOrEmpty(request.getHeaders().get(HttpConstants.HttpHeaders.SESSION_TOKEN))) {
             if (!sessionConsistency ||
                 (!request.isReadOnlyRequest() && request.getOperationType() != OperationType.Batch && !this.useMultipleWriteLocations)) {
+                logger.info("Removing session token in applySessionToken2");
                 request.getHeaders().remove(HttpConstants.HttpHeaders.SESSION_TOKEN);
             }
             return Mono.empty(); //User is explicitly controlling the session.

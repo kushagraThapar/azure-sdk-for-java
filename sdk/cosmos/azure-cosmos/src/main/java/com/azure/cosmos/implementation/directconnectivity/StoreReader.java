@@ -430,6 +430,7 @@ public class StoreReader {
                                 requestSessionToken.v = entity.requestContext.sessionToken;
                             }
                         } else {
+                            logger.info("Removing session token from request headers readMultipleReplicasInternalAsync");
                             entity.getHeaders().remove(HttpConstants.HttpHeaders.SESSION_TOKEN);
                         }
 
@@ -581,6 +582,7 @@ public class StoreReader {
                             // Remove whatever session token can be there in headers.
                             // We don't need it. If it is global - backend will not understand it.
                             // But there's no point in producing partition local session token.
+                            logger.info("Removing session token from request headers - readPrimaryInternalAsync");
                             entity.getHeaders().remove(HttpConstants.HttpHeaders.SESSION_TOKEN);
                         }
 
