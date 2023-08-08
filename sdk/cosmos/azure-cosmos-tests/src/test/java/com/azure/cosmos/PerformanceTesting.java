@@ -36,10 +36,20 @@ public class PerformanceTesting {
     @Test
     public void performanceTestingSyncClient() throws InterruptedException {
         setup();
-        readAndUpsertItems();
-        while (executorService.awaitTermination(60, TimeUnit.MINUTES)) {
-            logger.info("Waiting for all threads to finish");
-        }
+//        readAndUpsertItems();
+//        while (executorService.awaitTermination(60, TimeUnit.MINUTES)) {
+//            logger.info("Waiting for all threads to finish");
+//        }
+        queryItemIds();
+        idPkMap.forEach((id, pk) -> {
+            if (counter.incrementAndGet() % 3 == 0) {
+                upsertItem(id, pk);
+                upsertCounter.incrementAndGet();
+            } else {
+                readItem(id, pk);
+                readCounter.incrementAndGet();
+            }
+        });
         readLatencyList.sort(Long::compareTo);
         logger.info("Total read operations: {}", readCounter.get());
         logger.info("Average read is : {}", getAverage(readLatencyList));
@@ -101,7 +111,7 @@ public class PerformanceTesting {
     }
 
     public void queryItemIds() {
-        String query = "SELECT c.id, c.pk FROM c";
+        String query = "SELECT c.id, c.pk FROM c offset 0 limit 1000";
         CosmosPagedIterable<JsonNode> jsonNodes = cosmosContainer.queryItems(query, new CosmosQueryRequestOptions(),
             JsonNode.class);
         jsonNodes.iterableByPage().forEach(cosmosItemPropertiesFeedResponse -> {
