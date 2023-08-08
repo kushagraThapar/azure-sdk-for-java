@@ -265,7 +265,6 @@ public class RntbdTransportClient extends TransportClient {
 
         checkNotNull(addressUri, "expected non-null addressUri");
         checkNotNull(request, "expected non-null request");
-        logger.error("Final session token in the header is requestSessionToken: {}", request.getHeaders().get(HttpConstants.HttpHeaders.SESSION_TOKEN));
         this.throwIfClosed();
 
         final URI address = addressUri.getURI();

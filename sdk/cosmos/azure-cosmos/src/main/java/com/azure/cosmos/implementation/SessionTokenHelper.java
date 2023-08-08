@@ -28,10 +28,7 @@ public class SessionTokenHelper {
             throw new IllegalArgumentException("request is null");
         }
 
-        //logger.info("Setting original session token : {}", originalSessionToken);
-
         if (originalSessionToken == null) {
-            logger.info("Removing session token from request headers setOriginalSessionToken");
             request.getHeaders().remove(HttpConstants.HttpHeaders.SESSION_TOKEN);
         } else {
             request.getHeaders().put(HttpConstants.HttpHeaders.SESSION_TOKEN, originalSessionToken);
@@ -45,8 +42,6 @@ public class SessionTokenHelper {
     public static void setPartitionLocalSessionToken(RxDocumentServiceRequest request, String partitionKeyRangeId, ISessionContainer sessionContainer) {
         String originalSessionToken = request.getHeaders().get(HttpConstants.HttpHeaders.SESSION_TOKEN);
 
-        //logger.info("Setting original session token in partition local session token : {}", originalSessionToken);
-
         if (Strings.isNullOrEmpty(partitionKeyRangeId)) {
             // AddressCache/address resolution didn't produce partition key range id.
             // In this case it is a bug.
@@ -55,24 +50,15 @@ public class SessionTokenHelper {
 
         if (StringUtils.isNotEmpty(originalSessionToken)) {
             ISessionToken sessionToken = getLocalSessionToken(request, originalSessionToken, partitionKeyRangeId);
-            if (sessionToken != null) {
-                logger.info("localSessionToken: {}", sessionToken.convertToString());
-            }
             request.requestContext.sessionToken = sessionToken;
         } else {
             // use ambient session token.
             ISessionToken sessionToken = sessionContainer.resolvePartitionLocalSessionToken(request, partitionKeyRangeId);
-            if (sessionToken != null) {
-                logger.info("Resolving partition local session token : {}", sessionToken.convertToString());
-            }
             request.requestContext.sessionToken = sessionToken;
         }
 
-        //logger.info("Request context session token : {}", request.requestContext.sessionToken);
-
 
         if (request.requestContext.sessionToken == null) {
-            logger.info("Removing session token from request headers setPartitionLocalSessionToken");
             request.getHeaders().remove(HttpConstants.HttpHeaders.SESSION_TOKEN);
         } else {
 
@@ -98,9 +84,6 @@ public class SessionTokenHelper {
         // Local session token is single <partitionkeyrangeid>:<lsn> pair.
         // Backend only cares about pair which relates to the range owned by the partition.
         String[] localTokens = StringUtils.split(globalSessionToken, ",");
-        for (String s: localTokens) {
-            logger.info("Global session token : {}", s);
-        }
         Set<String> partitionKeyRangeSet = new HashSet<>();
         partitionKeyRangeSet.add(partitionKeyRangeId);
 
@@ -117,16 +100,8 @@ public class SessionTokenHelper {
             }
 
             ISessionToken parsedSessionToken = SessionTokenHelper.parse(items[1]);
-            logger.info("Parsed session token : {}", parsedSessionToken.convertToString());
-            logger.info("PartitionKeyRangeId is : {}", partitionKeyRangeId);
-            logger.info("PartitionKeyRangeSet is : {}", partitionKeyRangeSet);
-            for (String s : items) {
-                logger.info("items is : {}", s);
-            }
 
             if (partitionKeyRangeSet.contains(items[0])) {
-
-                logger.info("Partition Key range set contains : {}", items[0]);
 
                 if (highestSessionToken == null) {
                     highestSessionToken = parsedSessionToken;
@@ -134,8 +109,6 @@ public class SessionTokenHelper {
                     highestSessionToken = highestSessionToken.merge(parsedSessionToken);
                 }
 
-            } else {
-                logger.warn("");
             }
         }
 
@@ -194,10 +167,8 @@ public class SessionTokenHelper {
 
     public static void validateAndRemoveSessionToken(RxDocumentServiceRequest request) {
         String sessionToken = request.getHeaders().get(HttpConstants.HttpHeaders.SESSION_TOKEN);
-        //logger.info("Removing session token : {}", sessionToken);
         if (!Strings.isNullOrEmpty(sessionToken)) {
             getLocalSessionToken(request, sessionToken, StringUtils.EMPTY);
-            logger.info("Removing session token validateAndRemoveSessionToken");
             request.getHeaders().remove(HttpConstants.HttpHeaders.SESSION_TOKEN);
         }
     }
