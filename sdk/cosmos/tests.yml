@@ -35,6 +35,30 @@ extends:
           AdditionalVariables:
             - name: AdditionalArgs
               value: '-DCOSMOS.CLIENT_LEAK_DETECTION_ENABLED=true'
+          PostSteps:
+            - task: Maven@4
+              condition: and(succeeded(), eq(variables['RunCBSecondPass'], 'true'))
+              displayName: 'Run tests with Circuit Breaker DISABLED'
+              inputs:
+                mavenPomFile: pom.xml
+                options: '$(DefaultTestOptions) -DAZURE_TEST_DEBUG=$(IsDebug) -Dparallel-test-playback=false $(ProfileFlag) "-DCOSMOS.PARTITION_LEVEL_CIRCUIT_BREAKER_DEFAULT_CONFIG_OPT_IN=FALSE" -DskipCompile=true -DskipTestCompile=true -DcreateSourcesJar=false -T 1'
+                mavenOptions: '$(MemoryOptions) $(LoggingOptions)'
+                javaHomeOption: 'JDKVersion'
+                jdkVersionOption: $(JavaTestVersion)
+                jdkArchitectureOption: 'x64'
+                publishJUnitResults: false
+                goals: 'verify'
+              env:
+                AZURE_TEST_MODE: 'LIVE'
+            - task: PublishTestResults@2
+              condition: and(always(), eq(variables['RunCBSecondPass'], 'true'))
+              displayName: 'Publish CB=false test results'
+              inputs:
+                testResultsFormat: 'JUnit'
+                testResultsFiles: '**/junitreports/TEST-*.xml'
+                searchFolder: '$(System.DefaultWorkingDirectory)/sdk'
+                mergeTestResults: true
+                testRunTitle: '$(Agent.JobName)_CB_false_attempt_$(System.JobAttempt)'
 
       - template: /eng/pipelines/templates/stages/archetype-sdk-tests-isolated.yml
         parameters:
