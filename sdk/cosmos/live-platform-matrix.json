@@ -27,22 +27,13 @@
   },
   "include": [
     {
-      "ConsistencyConfig": {
-        "Session": {
-          "DESIRED_CONSISTENCY": "Session",
-          "ACCOUNT_CONSISTENCY": "Session",
-          "ArmTemplateParameters": "@{ enableMultipleWriteLocations = $false; defaultConsistencyLevel = 'Session'; enablePartitionMerge = $true }"
-        },
-        "Strong": {
-          "DESIRED_CONSISTENCY": "Strong",
-          "ACCOUNT_CONSISTENCY": "Strong",
-          "ArmTemplateParameters": "@{ enableMultipleWriteLocations = $false; defaultConsistencyLevel = 'Strong' }"
-        }
-      },
+      "DESIRED_CONSISTENCY": "Session",
+      "ACCOUNT_CONSISTENCY": "Session",
       "AdditionalArgs": [
         "-DargLine=\"-Dazure.cosmos.directModeProtocol=Tcp\""
       ],
       "ProfileFlag": "-Pe2e",
+      "ArmTemplateParameters": "@{ enableMultipleWriteLocations = $false; defaultConsistencyLevel = 'Session' }",
       "Agent": {
         "ubuntu": { "OSVmImage": "env:LINUXVMIMAGE", "Pool": "env:LINUXPOOL" }
       }
@@ -66,16 +57,6 @@
       "ArmTemplateParameters": "@{ enableMultipleWriteLocations = $false; defaultConsistencyLevel = 'Strong' }",
       "PROTOCOLS": "[\"Tcp\"]",
       "ProfileFlag": [ "-Pcfp-split", "-Psplit", "-Pquery", "-Pfast" ],
-      "Agent": {
-        "ubuntu": { "OSVmImage": "env:LINUXVMIMAGE", "Pool": "env:LINUXPOOL" }
-      }
-    },
-    {
-      "DESIRED_CONSISTENCY": "BoundedStaleness",
-      "ACCOUNT_CONSISTENCY": "Strong",
-      "AdditionalArgs": "-DargLine=\"-Dazure.cosmos.directModeProtocol=Tcp\"",
-      "ProfileFlag": "-Pe2e",
-      "ArmTemplateParameters": "@{ enableMultipleWriteLocations = $false; defaultConsistencyLevel = 'Strong' }",
       "Agent": {
         "ubuntu": { "OSVmImage": "env:LINUXVMIMAGE", "Pool": "env:LINUXPOOL" }
       }
