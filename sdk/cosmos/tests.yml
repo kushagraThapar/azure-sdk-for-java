@@ -28,6 +28,7 @@ extends:
               groupId: com.azure
           TimeoutInMinutes: 210
           MaxParallel: 20
+          BuildOptions: '-Dshade.skip=true -Dmaven.antrun.skip=true'
           TestGoals: 'verify'
           TestOptions: '$(ProfileFlag) $(AdditionalArgs) -DskipCompile=true -DskipTestCompile=true -DcreateSourcesJar=false'
           TestResultsFiles: '**/junitreports/TEST-*.xml'
@@ -60,6 +61,7 @@ extends:
               groupId: com.azure
           TimeoutInMinutes: 210
           MaxParallel: 20
+          BuildOptions: '-Dshade.skip=true -Dmaven.antrun.skip=true'
           TestGoals: 'verify'
           TestOptions: '$(ProfileFlag) $(AdditionalArgs) -DskipCompile=true -DskipTestCompile=true -DcreateSourcesJar=false'
           TestResultsFiles: '**/junitreports/TEST-*.xml'
@@ -92,6 +94,7 @@ extends:
               groupId: com.azure
           TimeoutInMinutes: 210
           MaxParallel: 20
+          BuildOptions: '-Dshade.skip=true -Dmaven.antrun.skip=true'
           TestGoals: 'verify'
           TestOptions: '$(ProfileFlag) $(AdditionalArgs) -DskipCompile=true -DskipTestCompile=true -DcreateSourcesJar=false'
           TestResultsFiles: '**/junitreports/TEST-*.xml'
@@ -124,6 +127,7 @@ extends:
               groupId: com.azure
           TimeoutInMinutes: 210
           MaxParallel: 20
+          BuildOptions: '-Dshade.skip=true -Dmaven.antrun.skip=true'
           TestGoals: 'verify'
           TestOptions: '$(ProfileFlag) $(AdditionalArgs) -DskipCompile=true -DskipTestCompile=true -DcreateSourcesJar=false'
           TestResultsFiles: '**/junitreports/TEST-*.xml'
@@ -156,6 +160,7 @@ extends:
               groupId: com.azure
           TimeoutInMinutes: 210
           MaxParallel: 20
+          BuildOptions: '-Dshade.skip=true -Dmaven.antrun.skip=true'
           TestGoals: 'verify'
           TestOptions: '$(ProfileFlag) $(AdditionalArgs) -DskipCompile=true -DskipTestCompile=true -DcreateSourcesJar=false'
           TestResultsFiles: '**/junitreports/TEST-*.xml'
@@ -182,6 +187,7 @@ extends:
               groupId: com.azure
               safeName: azurespringdatacosmos
           TimeoutInMinutes: 90
+          BuildOptions: '-Dshade.skip=true -Dmaven.antrun.skip=true'
           TestGoals: 'verify'
           TestOptions: '$(ProfileFlag) $(AdditionalArgs) -DskipCompile=true -DskipTestCompile=true -DcreateSourcesJar=false'
           AdditionalVariables:
